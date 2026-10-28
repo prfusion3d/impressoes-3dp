@@ -1,138 +1,76 @@
 
-// ==============================================
-// LOJA 3D - SCRIPT COMPLETO
-// Cadastro, imagens, tema, WhatsApp e exclusão
-// ==============================================
+// ==========================================
+// LOJA 3D - CONFIGURAÇÕES DO SUPABASE
+// ==========================================
+
+const SUPABASE_URL =
+  "https://ewcatvwkotqpjxvxtwki.supabase.co";
+
+const SUPABASE_PUBLISHABLE_KEY =
+  "COLE_A_PUBLISHABLE_KEY_AQUI";
+
+const ADMIN_UID = "COLE_SEU_UID_AQUI";
 
 const WHATSAPP = "5544933007211";
-const CHAVE_MODELOS = "loja3d_modelos";
-const CHAVE_FILAMENTOS = "loja3d_filamentos";
-const CHAVE_TEMA = "loja3d_tema";
+const BUCKET = "produtos";
 
-// Produtos iniciais
-const modelosIniciais = [];
-const filamentosIniciais = [];
-
-// ==============================================
-// ARMAZENAMENTO LOCAL
-// ==============================================
-
-function lerLista(chave, inicial) {
-  try {
-    const texto = localStorage.getItem(chave);
-
-    if (texto === null) return [...inicial];
-
-    const dados = JSON.parse(texto);
-
-    return Array.isArray(dados)
-      ? dados
-      : [...inicial];
-
-  } catch (erro) {
-    console.error("Erro ao ler", chave, erro);
-    return [...inicial];
-  }
-}
-
-function gravarLista(chave, lista) {
-  try {
-    localStorage.setItem(
-      chave,
-      JSON.stringify(lista)
-    );
-
-    return true;
-
-  } catch (erro) {
-    console.error("Erro ao salvar", chave, erro);
-    return false;
-  }
-}
-
-let modelos = lerLista(
-  CHAVE_MODELOS,
-  modelosIniciais
-);
-
-let filamentos = lerLista(
-  CHAVE_FILAMENTOS,
-  filamentosIniciais
-);
-
-// ==============================================
+// ==========================================
 // FUNÇÕES AUXILIARES
-// ==============================================
+// ==========================================
 
-function elemento(tag, classe = "", texto) {
+function criar(tag, classe = "", texto = "") {
   const el = document.createElement(tag);
 
   if (classe) el.className = classe;
 
-  if (texto !== undefined) {
-    el.textContent = texto;
-  }
+  el.textContent = texto;
 
   return el;
 }
 
-function criarId() {
-  return typeof crypto !== "undefined" &&
-    crypto.randomUUID
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
 function moeda(valor) {
-  return Number(valor).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL"
-  });
+  return Number(valor).toLocaleString(
+    "pt-BR",
+    {
+      style: "currency",
+      currency: "BRL"
+    }
+  );
 }
 
-// ==============================================
-// VALIDAR FOTOS
-// ==============================================
+// VALIDAR ENDEREÇO DAS IMAGENS
+function validarFoto(foto) {
+  if (!foto) return true;
 
-function fotoValida(caminho) {
-  if (!caminho || typeof caminho !== "string") {
-    return false;
-  }
-
-  const foto = caminho.trim();
-
-  // Imagem da internet
   if (/^https?:\/\//i.test(foto)) {
     try {
-      const url = new URL(foto);
-
-      return (
-        url.protocol === "http:" ||
-        url.protocol === "https:"
+      return ["http:", "https:"].includes(
+        new URL(foto).protocol
       );
     } catch {
       return false;
     }
   }
 
-  // Imagem da pasta do projeto
-  const local = foto.startsWith("./")
-    ? foto.slice(2)
-    : foto;
+  const caminho = foto.replace(/^\.\//, "");
 
   return (
-    local.startsWith("imagens/") &&
-    local.length > "imagens/".length &&
-    !local.includes("..") &&
-    !/[\\:?#]/.test(local)
+    caminho.startsWith("imagens/") &&
+    caminho.length > 8 &&
+    !caminho.includes("..") &&
+    !/[\\:?#]/.test(caminho)
   );
 }
 
-// ==============================================
+// ==========================================
 // INICIAR LOJA
-// ==============================================
+// ==========================================
 
-function iniciarLoja() {
+async function iniciarLoja() {
+
+  const admin = document.querySelector(".admin");
+
+  const topo = document.querySelector(".topo");
 
   const catalogo = document.getElementById(
     "catalogo"
@@ -140,10 +78,6 @@ function iniciarLoja() {
 
   const listaCores = document.getElementById(
     "listaFilamentos"
-  );
-
-  const filtro = document.getElementById(
-    "filtroCategoria"
   );
 
   const formModelo = document.getElementById(
@@ -154,129 +88,193 @@ function iniciarLoja() {
     "formFilamento"
   );
 
+  const filtro = document.getElementById(
+    "filtroCategoria"
+  );
+
   const botaoTema = document.getElementById(
     "alternarTema"
   );
 
-  const admin = document.querySelector(".admin");
+  const fotoTexto = document.getElementById(
+    "fotoModelo"
+  );
 
-  // ============================================
-  // MENSAGENS DENTRO DO SITE
-  // ============================================
-
-  function avisar(mensagem, erro = false) {
-
-    let aviso = document.getElementById(
-      "aviso-loja3d"
+  if (
+    !admin ||
+    !topo ||
+    !catalogo ||
+    !listaCores ||
+    !formModelo ||
+    !formFilamento
+  ) {
+    console.error(
+      "Elementos da loja não encontrados. Confira o HTML."
     );
+    return;
+  }
 
-    if (!aviso) {
+  // ========================================
+  // MODO CLARO E ESCURO
+  // ========================================
 
-      aviso = elemento("div");
-      aviso.id = "aviso-loja3d";
+  let tema = "escuro";
 
-      aviso.setAttribute("role", "status");
-
-      aviso.style.cssText = `
-        position: fixed;
-        bottom: 18px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 10001;
-        max-width: 90vw;
-        padding: 13px 18px;
-        border-radius: 10px;
-        color: #fff;
-        font-weight: bold;
-        box-shadow: 0 10px 30px #0006;
-      `;
-
-      document.body.appendChild(aviso);
+  try {
+    if (
+      localStorage.getItem("loja3d_tema") ===
+      "claro"
+    ) {
+      tema = "claro";
     }
+  } catch {}
+
+  function aplicarTema() {
+
+    document.documentElement.dataset.tema = tema;
+
+    if (botaoTema) {
+      botaoTema.textContent =
+        tema === "escuro"
+          ? "☀️ Modo claro"
+          : "🌙 Modo escuro";
+
+      botaoTema.setAttribute(
+        "aria-pressed",
+        String(tema === "claro")
+      );
+    }
+  }
+
+  aplicarTema();
+
+  botaoTema?.addEventListener("click", () => {
+
+    tema = tema === "escuro"
+      ? "claro"
+      : "escuro";
+
+    aplicarTema();
+
+    try {
+      localStorage.setItem(
+        "loja3d_tema",
+        tema
+      );
+    } catch {}
+  });
+
+  // ========================================
+  // MENSAGENS DO SITE
+  // ========================================
+
+  const aviso = criar("div");
+
+  aviso.setAttribute("role", "status");
+
+  aviso.style.cssText = `
+    position: fixed;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10001;
+    background: #15803d;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 10px;
+    max-width: 90vw;
+    box-shadow: 0 5px 20px #0006;
+    display: none;
+  `;
+
+  document.body.appendChild(aviso);
+
+  let tempoAviso;
+
+  function informar(texto, erro = false) {
+
+    aviso.textContent = texto;
 
     aviso.style.background = erro
       ? "#b91c1c"
       : "#15803d";
 
-    aviso.textContent = mensagem;
-    aviso.hidden = false;
+    aviso.style.display = "block";
 
-    clearTimeout(avisar.tempo);
+    clearTimeout(tempoAviso);
 
-    avisar.tempo = setTimeout(() => {
-      aviso.hidden = true;
-    }, 3500);
+    tempoAviso = setTimeout(() => {
+      aviso.style.display = "none";
+    }, 6000);
+
+    if (erro) console.error(texto);
   }
 
-  // ============================================
-  // CONFIRMAÇÃO DE EXCLUSÃO PERSONALIZADA
-  // ============================================
+  // ========================================
+  // JANELA DE CONFIRMAÇÃO DE EXCLUSÃO
+  // ========================================
 
-  function pedirConfirmacao(nome) {
+  function confirmarExclusao(nome) {
 
     return new Promise(resolve => {
 
-      const fundo = elemento("div");
+      const fundo = criar("div");
 
       fundo.style.cssText = `
         position: fixed;
         inset: 0;
         z-index: 10000;
         background: #0009;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        display: grid;
+        place-items: center;
         padding: 20px;
       `;
 
-      const caixa = elemento("div");
+      const caixa = criar("div");
+
+      caixa.style.cssText = `
+        width: 100%;
+        max-width: 420px;
+        padding: 24px;
+        border-radius: 14px;
+        background: var(--cartao, #172033);
+        color: var(--texto, white);
+        border: 1px solid var(--borda, #334155);
+      `;
 
       caixa.setAttribute("role", "dialog");
       caixa.setAttribute("aria-modal", "true");
+
       caixa.setAttribute(
         "aria-label",
         "Confirmar exclusão"
       );
 
-      caixa.style.cssText = `
-        width: 100%;
-        max-width: 420px;
-        padding: 25px;
-        background: var(--cartao, #172033);
-        color: var(--texto, white);
-        border: 1px solid var(--borda, #334155);
-        border-radius: 14px;
-        box-shadow: 0 20px 50px #0008;
-      `;
-
-      caixa.appendChild(
-        elemento("h3", "", "Excluir item?")
-      );
-
-      caixa.appendChild(
-        elemento(
+      caixa.append(
+        criar("h3", "", "Excluir item?"),
+        criar(
           "p",
           "",
           `Deseja excluir “${nome}”?`
         )
       );
 
-      const botoes = elemento("div");
+      const botoes = criar("div");
 
       botoes.style.cssText = `
         display: flex;
-        justify-content: flex-end;
         gap: 10px;
+        justify-content: flex-end;
         margin-top: 20px;
       `;
 
-      const cancelar = elemento(
+      const cancelar = criar(
         "button",
         "",
         "Cancelar"
       );
 
-      const excluir = elemento(
+      const excluir = criar(
         "button",
         "",
         "Sim, excluir"
@@ -286,24 +284,22 @@ function iniciarLoja() {
       excluir.type = "button";
 
       cancelar.style.cssText = `
-        padding: 12px;
-        border: 0;
-        border-radius: 8px;
         background: #64748b;
         color: white;
+        padding: 11px;
+        border: 0;
+        border-radius: 8px;
       `;
 
       excluir.style.cssText = `
-        padding: 12px;
+        background: #b91c1c;
+        color: white;
+        padding: 11px;
         border: 0;
         border-radius: 8px;
-        background: #dc2626;
-        color: white;
       `;
 
-      const focoAnterior = document.activeElement;
-
-      function concluir(resposta) {
+      function finalizar(valor) {
 
         document.removeEventListener(
           "keydown",
@@ -311,38 +307,23 @@ function iniciarLoja() {
         );
 
         fundo.remove();
-
-        if (
-          focoAnterior &&
-          focoAnterior.isConnected
-        ) {
-          focoAnterior.focus();
-        }
-
-        resolve(resposta);
+        resolve(valor);
       }
 
-      function aoTeclar(evento) {
-        if (evento.key === "Escape") {
-          concluir(false);
+      function aoTeclar(e) {
+        if (e.key === "Escape") {
+          finalizar(false);
         }
       }
 
-      cancelar.addEventListener(
-        "click",
-        () => concluir(false)
-      );
+      cancelar.onclick = () => finalizar(false);
+      excluir.onclick = () => finalizar(true);
 
-      excluir.addEventListener(
-        "click",
-        () => concluir(true)
-      );
-
-      fundo.addEventListener("click", evento => {
-        if (evento.target === fundo) {
-          concluir(false);
+      fundo.onclick = e => {
+        if (e.target === fundo) {
+          finalizar(false);
         }
-      });
+      };
 
       document.addEventListener(
         "keydown",
@@ -350,6 +331,7 @@ function iniciarLoja() {
       );
 
       botoes.append(cancelar, excluir);
+
       caixa.appendChild(botoes);
       fundo.appendChild(caixa);
 
@@ -359,137 +341,474 @@ function iniciarLoja() {
     });
   }
 
-  // ============================================
-  // EXCLUIR MODELOS OU FILAMENTOS
-  // ============================================
+  // ========================================
+  // CONECTAR AO SUPABASE
+  // ========================================
 
-  async function excluirRegistro(tipo, item) {
+  if (!window.supabase?.createClient) {
 
-    const ehModelo = tipo === "modelo";
-
-    const lista = ehModelo
-      ? modelos
-      : filamentos;
-
-    const indice = lista.indexOf(item);
-
-    if (indice < 0) {
-      avisar(
-        "Não encontrei este item. Atualize a página.",
-        true
-      );
-      return;
-    }
-
-    const nome = ehModelo
-      ? item.nome
-      : `${item.tipo} - ${item.cor}`;
-
-    const confirmou = await pedirConfirmacao(nome);
-
-    if (!confirmou) return;
-
-    // Criar lista sem o item excluído
-    const novaLista = lista.filter(
-      (_, i) => i !== indice
+    informar(
+      "A biblioteca Supabase não foi carregada. Confira o index.html.",
+      true
     );
 
-    const chave = ehModelo
-      ? CHAVE_MODELOS
-      : CHAVE_FILAMENTOS;
-
-    // Salvar exclusão
-    if (!gravarLista(chave, novaLista)) {
-      avisar(
-        "Não foi possível salvar a exclusão.",
-        true
-      );
-      return;
-    }
-
-    // Atualizar dados
-    if (ehModelo) {
-      modelos = novaLista;
-    } else {
-      filamentos = novaLista;
-    }
-
-    atualizarLoja();
-
-    avisar(`“${nome}” excluído com sucesso!`);
+    return;
   }
 
-  // ============================================
-  // CRIAR PAINEL DE GERENCIAMENTO
-  // ============================================
+  if (
+    !SUPABASE_PUBLISHABLE_KEY ||
+    SUPABASE_PUBLISHABLE_KEY.includes("COLE_")
+  ) {
 
-  let areaGerenciamento = null;
-
-  if (admin) {
-
-    let painel = document.getElementById(
-      "painelExcluirItens"
+    informar(
+      "Falta preencher SUPABASE_PUBLISHABLE_KEY no script.js.",
+      true
     );
 
-    if (!painel) {
+    return;
+  }
 
-      painel = elemento(
-        "details",
-        "painel"
-      );
+  if (
+    !ADMIN_UID ||
+    ADMIN_UID.includes("COLE_")
+  ) {
 
-      painel.id = "painelExcluirItens";
+    informar(
+      "Falta preencher ADMIN_UID no script.js.",
+      true
+    );
 
-      painel.appendChild(
-        elemento(
-          "summary",
+    return;
+  }
+
+  const db = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
+  );
+
+  let modelos = [];
+  let filamentos = [];
+  let administrador = false;
+
+  // ========================================
+  // ÁREA ADMINISTRATIVA
+  // ========================================
+
+  const botaoAdmin = criar(
+    "button",
+    "",
+    "⚙️ Administração"
+  );
+
+  botaoAdmin.type = "button";
+
+  botaoAdmin.style.cssText = `
+    padding: 10px 14px;
+    border-radius: 25px;
+    background: var(--cartao);
+    color: var(--texto);
+    border: 1px solid var(--borda);
+    cursor: pointer;
+  `;
+
+  topo.appendChild(botaoAdmin);
+
+  admin.hidden = true;
+
+  botaoAdmin.onclick = () => {
+
+    admin.hidden = !admin.hidden;
+
+    if (!admin.hidden) {
+      admin.scrollIntoView({
+        behavior: "smooth"
+      });
+    }
+  };
+
+  const painelLogin = criar(
+    "div",
+    "painel"
+  );
+
+  admin.prepend(painelLogin);
+
+  const paineisCadastro = [
+    ...admin.querySelectorAll("details")
+  ];
+
+  // ========================================
+  // PAINEL PARA EXCLUIR ITENS
+  // ========================================
+
+  let painelExcluir = document.getElementById(
+    "painelExcluirItens"
+  );
+
+  if (!painelExcluir) {
+
+    painelExcluir = criar(
+      "details",
+      "painel"
+    );
+
+    painelExcluir.id = "painelExcluirItens";
+
+    painelExcluir.appendChild(
+      criar(
+        "summary",
+        "",
+        "🗑️ Gerenciar e excluir itens"
+      )
+    );
+
+    admin.appendChild(painelExcluir);
+  }
+
+  const listaGerenciar = criar("div");
+
+  listaGerenciar.style.paddingTop = "15px";
+
+  painelExcluir.appendChild(listaGerenciar);
+  paineisCadastro.push(painelExcluir);
+
+  // ========================================
+  // CAMPO PARA ENVIAR FOTO
+  // ========================================
+
+  const campoArquivo = criar("input");
+
+  campoArquivo.type = "file";
+
+  campoArquivo.accept =
+    "image/png,image/jpeg,image/webp";
+
+  campoArquivo.id = "fotoArquivo";
+
+  if (fotoTexto) {
+
+    const rotulo = criar(
+      "label",
+      "",
+      "Ou escolha uma foto do computador:"
+    );
+
+    rotulo.htmlFor = "fotoArquivo";
+
+    fotoTexto.parentElement.append(
+      rotulo,
+      campoArquivo
+    );
+  }
+
+  // ========================================
+  // VERIFICAR LOGIN
+  // ========================================
+
+  async function verificarSessao() {
+
+    const { data, error } = await db.auth.getUser();
+
+    administrador =
+      !error &&
+      data?.user?.id === ADMIN_UID;
+
+    mostrarLogin();
+    renderizar();
+  }
+
+  // ========================================
+  // INTERFACE DE LOGIN
+  // ========================================
+
+  function mostrarLogin() {
+
+    painelLogin.replaceChildren();
+
+    paineisCadastro.forEach(p => {
+      p.hidden = !administrador;
+    });
+
+    if (administrador) {
+
+      painelLogin.appendChild(
+        criar(
+          "p",
           "",
-          "🗑️ Gerenciar e excluir itens cadastrados"
+          "✅ Administrador conectado"
         )
       );
 
-      admin.appendChild(painel);
+      const sair = criar(
+        "button",
+        "btn-salvar",
+        "Sair da conta"
+      );
+
+      sair.type = "button";
+
+      sair.onclick = async () => {
+
+        const { error } = await db.auth.signOut();
+
+        if (error) {
+          return informar(error.message, true);
+        }
+
+        administrador = false;
+
+        mostrarLogin();
+        renderizar();
+      };
+
+      painelLogin.appendChild(sair);
+
+      return;
     }
 
-    areaGerenciamento = elemento("div");
+    painelLogin.appendChild(
+      criar(
+        "h3",
+        "",
+        "Entrar como administrador"
+      )
+    );
 
-    areaGerenciamento.style.paddingTop = "16px";
+    const form = criar("form");
 
-    painel.appendChild(areaGerenciamento);
+    const email = criar("input");
+    email.type = "email";
+    email.placeholder = "E-mail";
+    email.autocomplete = "username";
+    email.required = true;
+
+    const senha = criar("input");
+    senha.type = "password";
+    senha.placeholder = "Senha";
+    senha.autocomplete = "current-password";
+    senha.required = true;
+
+    const entrar = criar(
+      "button",
+      "btn-salvar",
+      "Entrar"
+    );
+
+    entrar.type = "submit";
+
+    form.append(email, senha, entrar);
+
+    form.onsubmit = async e => {
+
+      e.preventDefault();
+
+      entrar.disabled = true;
+
+      try {
+
+        const { data, error } =
+          await db.auth.signInWithPassword({
+            email: email.value.trim(),
+            password: senha.value
+          });
+
+        if (error) throw error;
+
+        if (data.user?.id !== ADMIN_UID) {
+
+          await db.auth.signOut();
+
+          throw new Error(
+            "Esta conta não é administradora."
+          );
+        }
+
+        administrador = true;
+
+        mostrarLogin();
+        renderizar();
+
+        informar("Login realizado!");
+
+      } catch (erro) {
+
+        informar(
+          "Erro no login: " + erro.message,
+          true
+        );
+
+      } finally {
+        entrar.disabled = false;
+      }
+    };
+
+    painelLogin.appendChild(form);
   }
 
-  // ============================================
-  // MOSTRAR PAINEL DE GERENCIAMENTO
-  // ============================================
+  // ========================================
+  // CARREGAR PRODUTOS DO SUPABASE
+  // ========================================
+
+  async function carregarCatalogo() {
+
+    const [resModelos, resFilamentos] =
+      await Promise.all([
+
+        db.from("modelos")
+          .select("*")
+          .order("criado_em", {
+            ascending: false
+          }),
+
+        db.from("filamentos")
+          .select("*")
+          .order("criado_em", {
+            ascending: false
+          })
+
+      ]);
+
+    if (resModelos.error) {
+
+      informar(
+        "Erro ao buscar modelos: " +
+        resModelos.error.message,
+        true
+      );
+
+    } else {
+
+      modelos = resModelos.data || [];
+    }
+
+    if (resFilamentos.error) {
+
+      informar(
+        "Erro ao buscar filamentos: " +
+        resFilamentos.error.message,
+        true
+      );
+
+    } else {
+
+      filamentos = resFilamentos.data || [];
+    }
+
+    renderizar();
+  }
+
+  // ========================================
+  // EXCLUIR PRODUTO DO SUPABASE
+  // ========================================
+
+  async function excluirItem(tipo, item) {
+
+    if (!administrador) {
+
+      return informar(
+        "Entre como administrador.",
+        true
+      );
+    }
+
+    const nome = tipo === "modelo"
+      ? item.nome
+      : `${item.tipo} - ${item.cor}`;
+
+    if (!(await confirmarExclusao(nome))) {
+      return;
+    }
+
+    const tabela = tipo === "modelo"
+      ? "modelos"
+      : "filamentos";
+
+    const { data, error } = await db
+      .from(tabela)
+      .delete()
+      .eq("id", item.id)
+      .select("id");
+
+    if (error) {
+
+      return informar(
+        "Erro ao excluir: " + error.message,
+        true
+      );
+    }
+
+    if (!data?.length) {
+
+      return informar(
+        "Exclusão não autorizada. Confira as regras RLS.",
+        true
+      );
+    }
+
+    // REMOVER FOTO ENVIADA PELO FORMULÁRIO
+    if (tipo === "modelo" && item.foto) {
+
+      const prefixo =
+        `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/catalogo/`;
+
+      if (item.foto.startsWith(prefixo)) {
+
+        const nomeArquivo = decodeURIComponent(
+          item.foto
+            .slice(prefixo.length)
+            .split("?")[0]
+        );
+
+        const resultado = await db.storage
+          .from(BUCKET)
+          .remove([`catalogo/${nomeArquivo}`]);
+
+        if (resultado.error) {
+
+          console.warn(
+            "Foto não removida:",
+            resultado.error.message
+          );
+        }
+      }
+    }
+
+    await carregarCatalogo();
+
+    informar("Item excluído com sucesso!");
+  }
+
+  // ========================================
+  // MOSTRAR GERENCIAMENTO
+  // ========================================
 
   function mostrarGerenciamento() {
 
-    if (!areaGerenciamento) return;
+    listaGerenciar.replaceChildren();
 
-    areaGerenciamento.replaceChildren();
+    if (!administrador) return;
 
     const grupos = [
-      {
-        titulo: "Modelos 3D",
-        tipo: "modelo",
-        itens: modelos
-      },
-      {
-        titulo: "Filamentos",
-        tipo: "filamento",
-        itens: filamentos
-      }
+      ["modelo", modelos],
+      ["filamento", filamentos]
     ];
 
-    grupos.forEach(grupo => {
+    for (const [tipo, itens] of grupos) {
 
-      areaGerenciamento.appendChild(
-        elemento("h3", "", grupo.titulo)
+      listaGerenciar.appendChild(
+        criar(
+          "h3",
+          "",
+          tipo === "modelo"
+            ? "Modelos 3D"
+            : "Filamentos"
+        )
       );
 
-      if (!grupo.itens.length) {
-        areaGerenciamento.appendChild(
-          elemento(
+      if (!itens.length) {
+
+        listaGerenciar.appendChild(
+          criar(
             "p",
             "",
             "Nenhum item cadastrado."
@@ -497,76 +816,71 @@ function iniciarLoja() {
         );
       }
 
-      grupo.itens.forEach(item => {
+      itens.forEach(item => {
 
-        const linha = elemento("div");
+        const linha = criar("div");
 
         linha.style.cssText = `
           display: flex;
-          align-items: center;
           justify-content: space-between;
+          align-items: center;
           gap: 12px;
-          padding: 12px;
+          border: 1px solid var(--borda);
+          border-radius: 9px;
+          padding: 10px;
           margin: 8px 0;
-          border: 1px solid var(--borda, #334155);
-          border-radius: 8px;
         `;
 
-        const nome = grupo.tipo === "modelo"
-          ? item.nome
-          : `${item.tipo} - ${item.cor}`;
-
-        const rotulo = elemento(
+        const nome = criar(
           "span",
           "",
-          nome
+          tipo === "modelo"
+            ? item.nome
+            : `${item.tipo} - ${item.cor}`
         );
 
-        rotulo.style.overflowWrap = "anywhere";
+        nome.style.overflowWrap = "anywhere";
 
-        const botao = elemento(
+        const excluir = criar(
           "button",
           "",
           "🗑️ Excluir"
         );
 
-        botao.type = "button";
+        excluir.type = "button";
 
-        botao.style.cssText = `
+        excluir.style.cssText = `
           background: #b91c1c;
           color: white;
-          padding: 10px;
           border: 0;
           border-radius: 8px;
-          flex-shrink: 0;
+          padding: 10px;
+          cursor: pointer;
         `;
 
-        botao.addEventListener(
-          "click",
-          () => excluirRegistro(grupo.tipo, item)
-        );
+        excluir.onclick = () => {
+          excluirItem(tipo, item);
+        };
 
-        linha.append(rotulo, botao);
+        linha.append(nome, excluir);
 
-        areaGerenciamento.appendChild(linha);
+        listaGerenciar.appendChild(linha);
       });
-    });
+    }
   }
 
-  // ============================================
+  // ========================================
   // MOSTRAR FILAMENTOS
-  // ============================================
+  // ========================================
 
   function mostrarFilamentos() {
-
-    if (!listaCores) return;
 
     listaCores.replaceChildren();
 
     if (!filamentos.length) {
 
       listaCores.appendChild(
-        elemento(
+        criar(
           "p",
           "mensagem-vazia",
           "Nenhum filamento cadastrado."
@@ -576,80 +890,68 @@ function iniciarLoja() {
       return;
     }
 
-    filamentos.forEach(item => {
+    filamentos.forEach(f => {
 
-      const linha = elemento(
-        "div",
-        "cor-item"
-      );
+      const linha = criar("div", "cor-item");
 
-      const bolinha = elemento(
+      const bolinha = criar(
         "div",
         "cor-bolinha"
       );
 
-      bolinha.style.backgroundColor =
-        item.hex || "#888888";
+      bolinha.style.backgroundColor = f.hex;
 
-      const texto =
-        `${item.tipo} - ${item.cor}` +
-        (item.marca ? ` (${item.marca})` : "");
-
-      const nome = elemento(
-        "span",
-        "cor-nome",
-        texto
+      linha.append(
+        bolinha,
+        criar(
+          "span",
+          "cor-nome",
+          `${f.tipo} - ${f.cor}` +
+          (f.marca ? ` (${f.marca})` : "")
+        )
       );
 
-      const excluir = elemento(
-        "button",
-        "cor-remover",
-        "×"
-      );
+      if (administrador) {
 
-      excluir.type = "button";
-      excluir.title = "Excluir filamento";
+        const excluir = criar(
+          "button",
+          "cor-remover",
+          "×"
+        );
 
-      excluir.setAttribute(
-        "aria-label",
-        `Excluir ${texto}`
-      );
+        excluir.type = "button";
 
-      excluir.addEventListener(
-        "click",
-        () => excluirRegistro("filamento", item)
-      );
+        excluir.onclick = () => {
+          excluirItem("filamento", f);
+        };
 
-      linha.append(bolinha, nome, excluir);
+        linha.appendChild(excluir);
+      }
 
       listaCores.appendChild(linha);
     });
   }
 
-  // ============================================
+  // ========================================
   // MOSTRAR MODELOS 3D
-  // ============================================
+  // ========================================
 
   function mostrarModelos() {
 
-    if (!catalogo) return;
-
     catalogo.replaceChildren();
 
-    const categoria = filtro
-      ? filtro.value
-      : "Todos";
+    const categoria = filtro?.value || "Todos";
 
     const visiveis = modelos.filter(
-      item =>
+      m =>
         categoria === "Todos" ||
-        item.categoria === categoria
+        m.categoria === categoria
     );
 
     if (!visiveis.length) {
 
       catalogo.appendChild(
-        elemento(
+        criar(
           "p",
           "mensagem-vazia",
           "Nenhum modelo encontrado."
@@ -659,150 +961,123 @@ function iniciarLoja() {
       return;
     }
 
-    visiveis.forEach(item => {
+    visiveis.forEach(m => {
 
-      const card = elemento(
-        "article",
-        "card"
-      );
+      const card = criar("article", "card");
 
-      // ====================================
-      // FOTO DO PRODUTO
-      // ====================================
-
+      // FOTO
       const semFoto = () =>
-        elemento(
+        criar(
           "div",
           "foto-produto sem-foto",
           "3D"
         );
 
-      if (fotoValida(item.foto)) {
+      if (m.foto) {
 
-        const imagem = elemento(
+        const img = criar(
           "img",
           "foto-produto"
         );
 
-        imagem.src = item.foto.trim();
-        imagem.alt = item.nome;
-        imagem.loading = "lazy";
+        img.src = m.foto;
+        img.alt = m.nome;
+        img.loading = "lazy";
 
-        imagem.onerror = () => {
-          imagem.replaceWith(semFoto());
+        img.onerror = () => {
+          img.replaceWith(semFoto());
         };
 
-        card.appendChild(imagem);
+        card.appendChild(img);
 
       } else {
+
         card.appendChild(semFoto());
       }
 
-      // ====================================
-      // INFORMAÇÕES DO PRODUTO
-      // ====================================
-
-      const info = elemento(
+      // INFORMAÇÕES
+      const info = criar(
         "div",
         "info-produto"
       );
 
-      info.appendChild(
-        elemento(
-          "span",
-          "tag",
-          item.categoria
-        )
-      );
-
-      info.appendChild(
-        elemento("h3", "", item.nome)
-      );
-
-      info.appendChild(
-        elemento(
+      info.append(
+        criar("span", "tag", m.categoria),
+        criar("h3", "", m.nome),
+        criar(
           "p",
           "descricao",
-          item.descricao ||
-          "Modelo produzido em impressão 3D."
+          m.descricao ||
+          "Modelo impresso em 3D."
         )
       );
 
       const temPreco =
-        item.preco !== null &&
-        item.preco !== undefined &&
-        item.preco !== "" &&
-        Number.isFinite(Number(item.preco));
+        m.preco !== null &&
+        m.preco !== undefined &&
+        m.preco !== "";
 
       info.appendChild(
-        elemento(
+        criar(
           "div",
           "preco",
           temPreco
-            ? moeda(item.preco)
+            ? moeda(m.preco)
             : "Consultar preço"
         )
       );
 
-      // ====================================
       // PERSONALIZAÇÃO
-      // ====================================
-
-      const personalizacao = elemento(
+      const personalizacao = criar(
         "div",
         "personalizacao"
       );
 
-      const rotuloCor = elemento(
+      const rotuloCor = criar(
         "label",
         "",
-        "Escolha a cor e o material:"
+        "Cor e material:"
       );
 
-      const seletor = elemento("select");
+      const seletor = criar("select");
 
       if (!filamentos.length) {
 
-        const opcao = elemento(
+        const opt = criar(
           "option",
           "",
           "A combinar"
         );
 
-        opcao.value = "";
+        opt.value = "";
 
-        seletor.appendChild(opcao);
+        seletor.appendChild(opt);
 
       } else {
 
-        filamentos.forEach((f, i) => {
+        filamentos.forEach(f => {
 
-          const texto =
-            `${f.tipo} - ${f.cor}` +
-            (f.marca ? ` (${f.marca})` : "");
-
-          const opcao = elemento(
+          const opt = criar(
             "option",
             "",
-            texto
+            `${f.tipo} - ${f.cor}`
           );
 
-          opcao.value = String(i);
+          opt.value = f.id;
 
-          seletor.appendChild(opcao);
+          seletor.appendChild(opt);
         });
       }
 
       rotuloCor.appendChild(seletor);
 
-      // Quantidade
-      const rotuloQtd = elemento(
+      const rotuloQtd = criar(
         "label",
         "",
         "Quantidade:"
       );
 
-      const quantidade = elemento("input");
+      const quantidade = criar("input");
 
       quantidade.type = "number";
       quantidade.min = "1";
@@ -819,11 +1094,8 @@ function iniciarLoja() {
 
       info.appendChild(personalizacao);
 
-      // ====================================
-      // PEDIDO PELO WHATSAPP
-      // ====================================
-
-      const pedir = elemento(
+      // WHATSAPP
+      const pedir = criar(
         "a",
         "botao-whatsapp",
         "Pedir pelo WhatsApp"
@@ -832,38 +1104,40 @@ function iniciarLoja() {
       pedir.target = "_blank";
       pedir.rel = "noopener noreferrer";
 
-      function atualizarPedido() {
+      function atualizarWhatsApp() {
 
-        let qtd = Math.floor(
-          Number(quantidade.value)
+        const filamento = filamentos.find(
+          f => String(f.id) === seletor.value
         );
 
-        if (!Number.isFinite(qtd) || qtd < 1) {
-          qtd = 1;
-        }
-
-        qtd = Math.min(qtd, 999);
-
-        const f = filamentos[
-          Number(seletor.value)
-        ];
-
-        const material = f
-          ? `${f.tipo} - ${f.cor}`
-          : "A combinar";
+        const qtd = Math.max(
+          1,
+          Math.min(
+            999,
+            Math.floor(
+              Number(quantidade.value) || 1
+            )
+          )
+        );
 
         let mensagem =
-          "Olá! Gostaria de fazer um pedido de impressão 3D.\n\n" +
-          `Modelo: ${item.nome}\n` +
-          `Categoria: ${item.categoria}\n` +
-          `Material e cor: ${material}\n` +
+          "Olá! Quero encomendar uma impressão 3D.\n\n" +
+          `Modelo: ${m.nome}\n` +
+          `Categoria: ${m.categoria}\n` +
+          `Material e cor: ${
+            filamento
+              ? `${filamento.tipo} - ${filamento.cor}`
+              : "A combinar"
+          }\n` +
           `Quantidade: ${qtd}\n`;
 
         if (temPreco) {
 
           mensagem +=
-            `Preço unitário: ${moeda(item.preco)}\n` +
-            `Total estimado: ${moeda(Number(item.preco) * qtd)}\n`;
+            `Preço unitário: ${moeda(m.preco)}\n` +
+            `Total estimado: ${
+              moeda(Number(m.preco) * qtd)
+            }\n`;
         }
 
         mensagem +=
@@ -876,319 +1150,355 @@ function iniciarLoja() {
 
       seletor.addEventListener(
         "change",
-        atualizarPedido
+        atualizarWhatsApp
       );
 
       quantidade.addEventListener(
         "input",
-        atualizarPedido
+        atualizarWhatsApp
       );
 
       pedir.addEventListener(
         "click",
-        atualizarPedido
+        atualizarWhatsApp
       );
 
-      atualizarPedido();
+      atualizarWhatsApp();
 
       info.appendChild(pedir);
 
-      // ====================================
       // EXCLUIR MODELO
-      // ====================================
+      if (administrador) {
 
-      const excluir = elemento(
-        "button",
-        "btn-remover",
-        "🗑️ Excluir modelo"
-      );
+        const excluir = criar(
+          "button",
+          "btn-remover",
+          "🗑️ Excluir modelo"
+        );
 
-      excluir.type = "button";
+        excluir.type = "button";
 
-      excluir.addEventListener(
-        "click",
-        () => excluirRegistro("modelo", item)
-      );
+        excluir.onclick = () => {
+          excluirItem("modelo", m);
+        };
 
-      info.appendChild(excluir);
+        info.appendChild(excluir);
+      }
 
       card.appendChild(info);
-
       catalogo.appendChild(card);
     });
   }
 
-  // ============================================
-  // ATUALIZAR A LOJA
-  // ============================================
+  // ========================================
+  // ATUALIZAR A TELA
+  // ========================================
 
-  function atualizarLoja() {
+  function renderizar() {
     mostrarFilamentos();
     mostrarModelos();
     mostrarGerenciamento();
   }
 
-  // ============================================
-  // CADASTRAR MODELO 3D
-  // ============================================
+  // ========================================
+  // ENVIAR FOTO AO SUPABASE STORAGE
+  // ========================================
 
-  if (formModelo) {
+  async function enviarFoto(arquivo) {
 
-    formModelo.addEventListener(
-      "submit",
-      evento => {
+    const extensoes = {
+      "image/png": "png",
+      "image/jpeg": "jpg",
+      "image/webp": "webp"
+    };
 
-        evento.preventDefault();
+    if (!extensoes[arquivo.type]) {
 
-        const nome = document.getElementById(
-          "nomeModelo"
-        ).value.trim();
+      throw new Error(
+        "Use uma imagem JPG, PNG ou WebP."
+      );
+    }
 
-        const categoria = document.getElementById(
-          "categoriaModelo"
-        ).value;
+    if (arquivo.size > 5 * 1024 * 1024) {
 
-        const descricao = document.getElementById(
-          "descricaoModelo"
-        ).value.trim();
+      throw new Error(
+        "A foto deve ter até 5 MB."
+      );
+    }
 
-        const valor = document.getElementById(
-          "precoModelo"
-        ).value;
+    const id = crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random()
+          .toString(36).slice(2)}`;
 
-        const foto = document.getElementById(
-          "fotoModelo"
-        ).value.trim();
+    const caminho =
+      `catalogo/${id}.${extensoes[arquivo.type]}`;
 
-        if (!nome) {
-          return avisar(
-            "Digite o nome do modelo.",
-            true
-          );
-        }
+    const { error } = await db.storage
+      .from(BUCKET)
+      .upload(caminho, arquivo, {
+        contentType: arquivo.type,
+        upsert: false
+      });
 
-        if (foto && !fotoValida(foto)) {
-          return avisar(
-            "Use imagens/nome.png ou um link https:// para a foto.",
-            true
-          );
-        }
+    if (error) throw error;
 
-        const preco = valor === ""
-          ? null
-          : Number(valor);
+    const { data } = db.storage
+      .from(BUCKET)
+      .getPublicUrl(caminho);
 
-        if (
-          preco !== null &&
-          (!Number.isFinite(preco) || preco < 0)
-        ) {
-          return avisar(
-            "Digite um preço válido.",
-            true
-          );
-        }
-
-        const novo = {
-          id: criarId(),
-          nome,
-          categoria,
-          descricao,
-          preco,
-          foto
-        };
-
-        const novaLista = [
-          ...modelos,
-          novo
-        ];
-
-        if (!gravarLista(CHAVE_MODELOS, novaLista)) {
-          return avisar(
-            "Não foi possível salvar o modelo.",
-            true
-          );
-        }
-
-        modelos = novaLista;
-
-        if (filtro) {
-          filtro.value = "Todos";
-        }
-
-        formModelo.reset();
-        atualizarLoja();
-
-        avisar("Modelo cadastrado com sucesso!");
-      }
-    );
+    return {
+      url: data.publicUrl,
+      caminho
+    };
   }
 
-  // ============================================
-  // CADASTRAR FILAMENTO
-  // ============================================
+  // ========================================
+  // CADASTRAR MODELO NO SUPABASE
+  // ========================================
 
-  if (formFilamento) {
+  formModelo.addEventListener(
+    "submit",
+    async e => {
 
-    formFilamento.addEventListener(
-      "submit",
-      evento => {
+      e.preventDefault();
 
-        evento.preventDefault();
+      if (!administrador) {
 
-        const cor = document.getElementById(
-          "nomeCor"
-        ).value.trim();
+        return informar(
+          "Entre como administrador.",
+          true
+        );
+      }
 
-        const tipo = document.getElementById(
-          "tipoFilamento"
-        ).value;
+      const nome = document.getElementById(
+        "nomeModelo"
+      ).value.trim();
 
-        const marca = document.getElementById(
-          "marcaFilamento"
-        ).value.trim();
+      const categoria = document.getElementById(
+        "categoriaModelo"
+      ).value;
 
-        const hex = document.getElementById(
-          "corFilamento"
-        ).value;
+      const descricao = document.getElementById(
+        "descricaoModelo"
+      ).value.trim();
 
-        if (!cor) {
-          return avisar(
-            "Digite o nome da cor.",
-            true
+      const precoTexto = document.getElementById(
+        "precoModelo"
+      ).value;
+
+      const fotoDigitada =
+        fotoTexto?.value.trim() || "";
+
+      const arquivo = campoArquivo.files?.[0];
+
+      const preco = precoTexto === ""
+        ? null
+        : Number(precoTexto);
+
+      if (!nome) {
+
+        return informar(
+          "Preencha o nome do modelo.",
+          true
+        );
+      }
+
+      if (!validarFoto(fotoDigitada)) {
+
+        return informar(
+          "Use imagens/foto.png ou um link https:// válido.",
+          true
+        );
+      }
+
+      if (
+        preco !== null &&
+        (!Number.isFinite(preco) || preco < 0)
+      ) {
+
+        return informar(
+          "Preço inválido.",
+          true
+        );
+      }
+
+      const botao = formModelo.querySelector(
+        '[type="submit"]'
+      );
+
+      if (botao) botao.disabled = true;
+
+      let caminhoNovo = null;
+
+      try {
+
+        let foto = fotoDigitada || null;
+
+        if (arquivo) {
+
+          const resultado = await enviarFoto(
+            arquivo
           );
+
+          foto = resultado.url;
+          caminhoNovo = resultado.caminho;
         }
 
-        const novaLista = [
-          ...filamentos,
-          {
-            id: criarId(),
+        const { error } = await db
+          .from("modelos")
+          .insert({
+            nome,
+            categoria,
+            descricao,
+            preco,
+            foto
+          });
+
+        if (error) throw error;
+
+        formModelo.reset();
+
+        if (filtro) filtro.value = "Todos";
+
+        await carregarCatalogo();
+
+        informar(
+          "Modelo salvo no Supabase!"
+        );
+
+      } catch (erro) {
+
+        if (caminhoNovo) {
+
+          const limpeza = await db.storage
+            .from(BUCKET)
+            .remove([caminhoNovo]);
+
+          if (limpeza.error) {
+
+            console.warn(
+              "Falha ao limpar foto:",
+              limpeza.error
+            );
+          }
+        }
+
+        informar(
+          "Erro ao cadastrar modelo: " +
+          erro.message,
+          true
+        );
+
+      } finally {
+
+        if (botao) botao.disabled = false;
+      }
+    }
+  );
+
+  // ========================================
+  // CADASTRAR FILAMENTO NO SUPABASE
+  // ========================================
+
+  formFilamento.addEventListener(
+    "submit",
+    async e => {
+
+      e.preventDefault();
+
+      if (!administrador) {
+
+        return informar(
+          "Entre como administrador.",
+          true
+        );
+      }
+
+      const cor = document.getElementById(
+        "nomeCor"
+      ).value.trim();
+
+      const tipo = document.getElementById(
+        "tipoFilamento"
+      ).value;
+
+      const marca = document.getElementById(
+        "marcaFilamento"
+      ).value.trim();
+
+      const hex = document.getElementById(
+        "corFilamento"
+      ).value;
+
+      if (!cor) {
+
+        return informar(
+          "Preencha a cor.",
+          true
+        );
+      }
+
+      const botao = formFilamento.querySelector(
+        '[type="submit"]'
+      );
+
+      if (botao) botao.disabled = true;
+
+      try {
+
+        const { error } = await db
+          .from("filamentos")
+          .insert({
             cor,
             tipo,
             marca,
             hex
-          }
-        ];
+          });
 
-        if (
-          !gravarLista(
-            CHAVE_FILAMENTOS,
-            novaLista
-          )
-        ) {
-          return avisar(
-            "Não foi possível salvar o filamento.",
-            true
-          );
-        }
-
-        filamentos = novaLista;
+        if (error) throw error;
 
         formFilamento.reset();
-        atualizarLoja();
 
-        avisar("Filamento cadastrado com sucesso!");
-      }
-    );
-  }
+        await carregarCatalogo();
 
-  // ============================================
-  // FILTRO DE CATEGORIAS
-  // ============================================
-
-  if (filtro) {
-    filtro.addEventListener(
-      "change",
-      mostrarModelos
-    );
-  }
-
-  // ============================================
-  // MODO CLARO E ESCURO
-  // ============================================
-
-  let temaAtual = "escuro";
-
-  try {
-
-    const salvo = localStorage.getItem(
-      CHAVE_TEMA
-    );
-
-    if (
-      salvo === "claro" ||
-      salvo === "escuro"
-    ) {
-      temaAtual = salvo;
-    }
-
-  } catch (erro) {
-    console.warn(
-      "Não foi possível ler o tema.",
-      erro
-    );
-  }
-
-  function aplicarTema(tema) {
-
-    temaAtual = tema;
-
-    document.documentElement.setAttribute(
-      "data-tema",
-      tema
-    );
-
-    if (botaoTema) {
-
-      botaoTema.textContent = tema === "claro"
-        ? "🌙 Modo escuro"
-        : "☀️ Modo claro";
-
-      botaoTema.setAttribute(
-        "aria-pressed",
-        String(tema === "claro")
-      );
-    }
-  }
-
-  if (botaoTema) {
-
-    botaoTema.addEventListener(
-      "click",
-      () => {
-
-        aplicarTema(
-          temaAtual === "escuro"
-            ? "claro"
-            : "escuro"
+        informar(
+          "Filamento salvo no Supabase!"
         );
 
-        try {
-          localStorage.setItem(
-            CHAVE_TEMA,
-            temaAtual
-          );
+      } catch (erro) {
 
-        } catch (erro) {
-          console.warn(
-            "Não foi possível salvar o tema.",
-            erro
-          );
-        }
+        informar(
+          "Erro ao cadastrar filamento: " +
+          erro.message,
+          true
+        );
+
+      } finally {
+
+        if (botao) botao.disabled = false;
       }
-    );
-  }
+    }
+  );
 
-  // ============================================
-  // INICIAR SITE
-  // ============================================
+  filtro?.addEventListener(
+    "change",
+    mostrarModelos
+  );
 
-  aplicarTema(temaAtual);
-  atualizarLoja();
+  // ========================================
+  // INICIAR CATÁLOGO E LOGIN
+  // ========================================
+
+  await Promise.all([
+    carregarCatalogo(),
+    verificarSessao()
+  ]);
 }
 
-// ==============================================
+// ==========================================
 // AGUARDAR O HTML CARREGAR
-// ==============================================
+// ==========================================
 
 if (document.readyState === "loading") {
 
@@ -1199,5 +1509,6 @@ if (document.readyState === "loading") {
   );
 
 } else {
+
   iniciarLoja();
 }
