@@ -1,22 +1,23 @@
 
 // ======================================
-// CONFIGURAÇÕES DA LOJA
+// MINHA LOJA 3D
+// JAVASCRIPT COMPLETO
 // ======================================
 
+// WHATSAPP DA LOJA
 const whatsapp = "5544933007211";
 
+// CHAVES DO ARMAZENAMENTO
 const CHAVE_MODELOS = "loja3d_modelos";
 const CHAVE_FILAMENTOS = "loja3d_filamentos";
 const CHAVE_TEMA = "loja3d_tema";
 
 // PRODUTOS INICIAIS
 const modelosIniciais = [];
-
-// FILAMENTOS INICIAIS
 const filamentosIniciais = [];
 
 // ======================================
-// ARMAZENAMENTO
+// ARMAZENAMENTO LOCAL
 // ======================================
 
 function carregarLista(chave, padrao) {
@@ -45,21 +46,17 @@ let filamentos = carregarLista(
   filamentosIniciais
 );
 
-function salvarDados() {
+function salvarLista(chave, lista) {
   try {
     localStorage.setItem(
-      CHAVE_MODELOS,
-      JSON.stringify(modelos)
-    );
-
-    localStorage.setItem(
-      CHAVE_FILAMENTOS,
-      JSON.stringify(filamentos)
+      chave,
+      JSON.stringify(lista)
     );
 
     return true;
   } catch (erro) {
-    alert("Erro ao salvar os dados.");
+    console.error(erro);
+    alert("Não foi possível salvar as alterações.");
     return false;
   }
 }
@@ -101,13 +98,13 @@ function formatarPreco(valor) {
 }
 
 // ======================================
-// VERIFICAR CAMINHO DA FOTO
+// VALIDAR IMAGENS
 // ======================================
 
-// Agora aceita:
+// Aceita:
 // imagens/dragao.png
 // imagens/chaveiro.jpg
-// ./imagens/miniatura.webp
+// ./imagens/produto.webp
 // https://site.com/foto.png
 
 function urlValida(valor) {
@@ -121,7 +118,7 @@ function urlValida(valor) {
     return false;
   }
 
-  // LINK DE SITE EXTERNO
+  // IMAGEM DA INTERNET
   if (/^https?:\/\//i.test(caminho)) {
     try {
       const url = new URL(caminho);
@@ -135,7 +132,7 @@ function urlValida(valor) {
     }
   }
 
-  // ARQUIVO LOCAL NA PASTA IMAGENS
+  // IMAGEM LOCAL
   const local = caminho.startsWith("./")
     ? caminho.slice(2)
     : caminho;
@@ -152,11 +149,12 @@ function urlValida(valor) {
 }
 
 // ======================================
-// INICIAR LOJA
+// INICIALIZAÇÃO DA LOJA
 // ======================================
 
 function iniciarLoja() {
 
+  // ELEMENTOS DO HTML
   const catalogo = document.getElementById(
     "catalogo"
   );
@@ -181,6 +179,123 @@ function iniciarLoja() {
     "alternarTema"
   );
 
+  const admin = document.querySelector(".admin");
+
+  // ====================================
+  // MODO CLARO E ESCURO
+  // ====================================
+
+  let temaAtual = "escuro";
+
+  try {
+    const temaSalvo = localStorage.getItem(
+      CHAVE_TEMA
+    );
+
+    if (
+      temaSalvo === "claro" ||
+      temaSalvo === "escuro"
+    ) {
+      temaAtual = temaSalvo;
+    }
+  } catch (erro) {
+    console.warn("Não foi possível carregar o tema.");
+  }
+
+  function aplicarTema(tema) {
+    temaAtual = tema;
+
+    document.documentElement.setAttribute(
+      "data-tema",
+      temaAtual
+    );
+
+    if (!botaoTema) return;
+
+    if (temaAtual === "claro") {
+      botaoTema.textContent = "🌙 Modo escuro";
+      botaoTema.setAttribute("aria-pressed", "true");
+    } else {
+      botaoTema.textContent = "☀️ Modo claro";
+      botaoTema.setAttribute("aria-pressed", "false");
+    }
+  }
+
+  if (botaoTema) {
+    botaoTema.addEventListener("click", () => {
+
+      const novoTema = temaAtual === "escuro"
+        ? "claro"
+        : "escuro";
+
+      aplicarTema(novoTema);
+
+      try {
+        localStorage.setItem(
+          CHAVE_TEMA,
+          temaAtual
+        );
+      } catch (erro) {
+        console.warn("Não foi possível salvar o tema.");
+      }
+    });
+  }
+
+  aplicarTema(temaAtual);
+
+  // ====================================
+  // EXCLUIR REGISTROS
+  // ====================================
+
+  function excluirRegistro(tipo, id) {
+
+    const ehModelo = tipo === "modelo";
+
+    const lista = ehModelo
+      ? modelos
+      : filamentos;
+
+    const chave = ehModelo
+      ? CHAVE_MODELOS
+      : CHAVE_FILAMENTOS;
+
+    const indice = lista.findIndex(
+      item => String(item.id) === String(id)
+    );
+
+    if (indice === -1) {
+      alert("Item não encontrado.");
+      return;
+    }
+
+    const item = lista[indice];
+
+    const nome = ehModelo
+      ? item.nome
+      : item.tipo + " - " + item.cor;
+
+    const confirmar = confirm(
+      "Deseja realmente excluir " + nome + "?"
+    );
+
+    if (!confirmar) return;
+
+    // REMOVER DA LISTA
+    const removido = lista.splice(indice, 1)[0];
+
+    // SALVAR ALTERAÇÃO
+    if (!salvarLista(chave, lista)) {
+      lista.splice(indice, 0, removido);
+      atualizarLoja();
+      return;
+    }
+
+    // ATUALIZAR TODA A LOJA
+    atualizarLoja();
+
+    alert("Item excluído com sucesso!");
+  }
+
   // ====================================
   // MOSTRAR FILAMENTOS
   // ====================================
@@ -192,6 +307,7 @@ function iniciarLoja() {
     listaFilamentos.replaceChildren();
 
     if (filamentos.length === 0) {
+
       listaFilamentos.appendChild(
         criar(
           "p",
@@ -207,6 +323,7 @@ function iniciarLoja() {
 
       const item = criar("div", "cor-item");
 
+      // COR DO FILAMENTO
       const bolinha = criar(
         "div",
         "cor-bolinha"
@@ -226,6 +343,7 @@ function iniciarLoja() {
         nomeCompleto
       );
 
+      // BOTÃO EXCLUIR
       const remover = criar(
         "button",
         "cor-remover",
@@ -233,25 +351,15 @@ function iniciarLoja() {
       );
 
       remover.type = "button";
-      remover.title = "Remover filamento";
+      remover.title = "Excluir filamento";
+
+      remover.setAttribute(
+        "aria-label",
+        "Excluir " + nomeCompleto
+      );
 
       remover.addEventListener("click", () => {
-
-        if (!confirm("Excluir este filamento?")) {
-          return;
-        }
-
-        const anteriores = filamentos;
-
-        filamentos = filamentos.filter(
-          item => item.id !== f.id
-        );
-
-        if (!salvarDados()) {
-          filamentos = anteriores;
-        }
-
-        atualizarLoja();
+        excluirRegistro("filamento", f.id);
       });
 
       item.append(
@@ -265,7 +373,7 @@ function iniciarLoja() {
   }
 
   // ====================================
-  // MOSTRAR MODELOS
+  // MOSTRAR MODELOS 3D
   // ====================================
 
   function mostrarModelos() {
@@ -286,11 +394,12 @@ function iniciarLoja() {
     });
 
     if (encontrados.length === 0) {
+
       catalogo.appendChild(
         criar(
           "p",
           "mensagem-vazia",
-          "Nenhum modelo encontrado. Cadastre seu primeiro produto!"
+          "Nenhum modelo encontrado."
         )
       );
 
@@ -301,9 +410,9 @@ function iniciarLoja() {
 
       const card = criar("article", "card");
 
-      // ==================================
-      // IMAGEM DO PRODUTO
-      // ==================================
+      // ================================
+      // FOTO DO PRODUTO
+      // ================================
 
       function semFoto() {
         return criar(
@@ -320,7 +429,6 @@ function iniciarLoja() {
           "foto-produto"
         );
 
-        // ACEITA IMAGEM LOCAL OU EXTERNA
         imagem.src = modelo.foto.trim();
         imagem.alt = modelo.nome;
         imagem.loading = "lazy";
@@ -335,9 +443,9 @@ function iniciarLoja() {
         card.appendChild(semFoto());
       }
 
-      // ==================================
-      // INFORMAÇÕES
-      // ==================================
+      // ================================
+      // INFORMAÇÕES DO PRODUTO
+      // ================================
 
       const info = criar(
         "div",
@@ -384,9 +492,9 @@ function iniciarLoja() {
         preco
       );
 
-      // ==================================
+      // ================================
       // PERSONALIZAÇÃO
-      // ==================================
+      // ================================
 
       const personalizacao = criar(
         "div",
@@ -460,9 +568,9 @@ function iniciarLoja() {
 
       info.appendChild(personalizacao);
 
-      // ==================================
-      // PEDIDO PELO WHATSAPP
-      // ==================================
+      // ================================
+      // WHATSAPP
+      // ================================
 
       const botao = criar(
         "a",
@@ -542,46 +650,32 @@ function iniciarLoja() {
 
       info.appendChild(botao);
 
-      // ==================================
+      // ================================
       // EXCLUIR MODELO
-      // ==================================
+      // ================================
 
       const remover = criar(
         "button",
         "btn-remover",
-        "Excluir modelo"
+        "🗑️ Excluir modelo"
       );
 
       remover.type = "button";
 
       remover.addEventListener("click", () => {
-
-        if (!confirm("Excluir este modelo?")) {
-          return;
-        }
-
-        const anteriores = modelos;
-
-        modelos = modelos.filter(
-          item => item.id !== modelo.id
-        );
-
-        if (!salvarDados()) {
-          modelos = anteriores;
-        }
-
-        mostrarModelos();
+        excluirRegistro("modelo", modelo.id);
       });
 
       info.appendChild(remover);
 
       card.appendChild(info);
+
       catalogo.appendChild(card);
     });
   }
 
   // ====================================
-  // CADASTRAR MODELO 3D
+  // CADASTRAR MODELO
   // ====================================
 
   if (formModelo) {
@@ -617,11 +711,10 @@ function iniciarLoja() {
           return;
         }
 
-        // VALIDAR IMAGEM LOCAL OU EXTERNA
         if (foto && !urlValida(foto)) {
           alert(
-            "Caminho de imagem inválido.\n\n" +
-            "Use imagens/dragao.png ou um link https://..."
+            "Imagem inválida.\n\n" +
+            "Use imagens/dragao.png ou um link https://"
           );
           return;
         }
@@ -640,16 +733,16 @@ function iniciarLoja() {
 
         const novoModelo = {
           id: gerarId(),
-          nome: nome,
-          categoria: categoria,
-          descricao: descricao,
-          preco: preco,
-          foto: foto
+          nome,
+          categoria,
+          descricao,
+          preco,
+          foto
         };
 
         modelos.push(novoModelo);
 
-        if (!salvarDados()) {
+        if (!salvarLista(CHAVE_MODELOS, modelos)) {
           modelos.pop();
           return;
         }
@@ -659,7 +752,6 @@ function iniciarLoja() {
         }
 
         atualizarLoja();
-
         formModelo.reset();
 
         alert("Modelo cadastrado com sucesso!");
@@ -702,21 +794,20 @@ function iniciarLoja() {
 
         const novoFilamento = {
           id: gerarId(),
-          cor: cor,
-          tipo: tipo,
-          marca: marca,
-          hex: hex
+          cor,
+          tipo,
+          marca,
+          hex
         };
 
         filamentos.push(novoFilamento);
 
-        if (!salvarDados()) {
+        if (!salvarLista(CHAVE_FILAMENTOS, filamentos)) {
           filamentos.pop();
           return;
         }
 
         atualizarLoja();
-
         formFilamento.reset();
 
         alert("Filamento cadastrado com sucesso!");
@@ -725,7 +816,7 @@ function iniciarLoja() {
   }
 
   // ====================================
-  // FILTRAR CATEGORIAS
+  // FILTRO DE CATEGORIAS
   // ====================================
 
   if (filtroCategoria) {
@@ -736,101 +827,181 @@ function iniciarLoja() {
   }
 
   // ====================================
-  // MODO CLARO E ESCURO
+  // NOVA ÁREA DE GERENCIAMENTO
   // ====================================
 
-  let temaAtual = "escuro";
+  let areaGerenciamento = null;
 
-  try {
-    const temaSalvo = localStorage.getItem(
-      CHAVE_TEMA
+  if (admin) {
+
+    // CRIAR PAINEL AUTOMATICAMENTE
+    const painel = criar(
+      "details",
+      "painel"
     );
 
-    if (
-      temaSalvo === "claro" ||
-      temaSalvo === "escuro"
-    ) {
-      temaAtual = temaSalvo;
-    }
-  } catch (erro) {
-    console.warn("Tema salvo indisponível.");
-  }
+    painel.id = "painelExcluirItens";
 
-  function aplicarTema(tema) {
-
-    temaAtual = tema;
-
-    document.documentElement.setAttribute(
-      "data-tema",
-      temaAtual
+    const tituloPainel = criar(
+      "summary",
+      "",
+      "🗑️ Gerenciar e excluir itens cadastrados"
     );
 
-    if (!botaoTema) return;
+    areaGerenciamento = criar("div");
 
-    if (temaAtual === "claro") {
+    areaGerenciamento.style.paddingTop = "18px";
 
-      botaoTema.textContent =
-        "🌙 Modo escuro";
+    painel.append(
+      tituloPainel,
+      areaGerenciamento
+    );
 
-      botaoTema.setAttribute(
-        "aria-pressed",
-        "true"
-      );
-
-    } else {
-
-      botaoTema.textContent =
-        "☀️ Modo claro";
-
-      botaoTema.setAttribute(
-        "aria-pressed",
-        "false"
-      );
-    }
+    admin.appendChild(painel);
   }
 
-  if (botaoTema) {
+  // ====================================
+  // EXIBIR ITENS NO GERENCIAMENTO
+  // ====================================
 
-    botaoTema.addEventListener(
-      "click",
-      function() {
+  function mostrarGerenciamento() {
 
-        const novoTema = temaAtual === "escuro"
-          ? "claro"
-          : "escuro";
+    if (!areaGerenciamento) return;
 
-        aplicarTema(novoTema);
+    areaGerenciamento.replaceChildren();
 
-        try {
-          localStorage.setItem(
-            CHAVE_TEMA,
-            temaAtual
-          );
-        } catch (erro) {
-          console.warn(
-            "Não foi possível salvar o tema."
-          );
-        }
+    const grupos = [
+      {
+        titulo: "Modelos 3D",
+        tipo: "modelo",
+        itens: modelos
+      },
+      {
+        titulo: "Filamentos disponíveis",
+        tipo: "filamento",
+        itens: filamentos
       }
-    );
+    ];
+
+    grupos.forEach(grupo => {
+
+      const subtitulo = criar(
+        "h3",
+        "",
+        grupo.titulo
+      );
+
+      subtitulo.style.margin = "20px 0 12px";
+
+      areaGerenciamento.appendChild(subtitulo);
+
+      if (grupo.itens.length === 0) {
+
+        const vazio = criar(
+          "p",
+          "",
+          "Nenhum item cadastrado."
+        );
+
+        vazio.style.color = "var(--secundario)";
+
+        areaGerenciamento.appendChild(vazio);
+
+        return;
+      }
+
+      grupo.itens.forEach(item => {
+
+        // LINHA DO ITEM
+        const linha = criar("div");
+
+        linha.style.cssText = `
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 12px;
+          margin-bottom: 10px;
+          border: 1px solid var(--borda);
+          border-radius: 9px;
+          background: var(--cartao);
+        `;
+
+        // NOME
+        const nomeItem = grupo.tipo === "modelo"
+          ? item.nome
+          : item.tipo + " - " + item.cor;
+
+        const nome = criar(
+          "span",
+          "",
+          nomeItem
+        );
+
+        nome.style.cssText = `
+          color: var(--texto);
+          font-size: 14px;
+          overflow-wrap: anywhere;
+          min-width: 0;
+        `;
+
+        // BOTÃO EXCLUIR
+        const botaoExcluir = criar(
+          "button",
+          "",
+          "🗑️ Excluir"
+        );
+
+        botaoExcluir.type = "button";
+
+        botaoExcluir.style.cssText = `
+          background: #b91c1c;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          padding: 10px 14px;
+          font-size: 13px;
+          font-weight: bold;
+          cursor: pointer;
+          flex-shrink: 0;
+        `;
+
+        botaoExcluir.addEventListener(
+          "click",
+          () => {
+            excluirRegistro(
+              grupo.tipo,
+              item.id
+            );
+          }
+        );
+
+        linha.append(
+          nome,
+          botaoExcluir
+        );
+
+        areaGerenciamento.appendChild(linha);
+      });
+    });
   }
 
   // ====================================
-  // ATUALIZAR LOJA
+  // ATUALIZAR A LOJA
   // ====================================
 
   function atualizarLoja() {
     mostrarFilamentos();
     mostrarModelos();
+    mostrarGerenciamento();
   }
 
-  // INICIALIZAÇÃO
-  aplicarTema(temaAtual);
+  // INICIAR CATÁLOGO
   atualizarLoja();
 }
 
 // ======================================
-// AGUARDAR HTML CARREGAR
+// AGUARDAR O HTML CARREGAR
 // ======================================
 
 if (document.readyState === "loading") {
@@ -844,185 +1015,3 @@ if (document.readyState === "loading") {
 
   iniciarLoja();
 }
-
-/* ======================================
-   GERENCIAR E EXCLUIR ITENS
-====================================== */
-
-(function () {
-
-  function iniciarExclusao() {
-
-    const admin = document.querySelector(".admin");
-
-    if (!admin) return;
-
-    if (document.getElementById("painelExcluirItens")) {
-      return;
-    }
-
-    // CRIAR PAINEL
-    const painel = document.createElement("details");
-    painel.className = "painel";
-    painel.id = "painelExcluirItens";
-
-    const titulo = document.createElement("summary");
-    titulo.textContent =
-      "🗑️ Gerenciar e excluir itens cadastrados";
-
-    const conteudo = document.createElement("div");
-    conteudo.style.paddingTop = "15px";
-
-    painel.append(titulo, conteudo);
-    admin.appendChild(painel);
-
-    // TIPOS DE CADASTRO
-    const tipos = [
-      {
-        chave: "loja3d_modelos",
-        titulo: "Modelos 3D",
-        nome: item => item.nome || "Sem nome"
-      },
-      {
-        chave: "loja3d_filamentos",
-        titulo: "Filamentos",
-        nome: item =>
-          `${item.tipo || "Material"} - ${item.cor || "Cor"}`
-      }
-    ];
-
-    // CARREGAR CADASTROS
-    function carregar(chave) {
-      try {
-        const dados = JSON.parse(
-          localStorage.getItem(chave)
-        );
-
-        return Array.isArray(dados) ? dados : [];
-
-      } catch {
-        return [];
-      }
-    }
-
-    // MOSTRAR LISTAS
-    function mostrarItens() {
-
-      conteudo.replaceChildren();
-
-      tipos.forEach(tipo => {
-
-        const subtitulo = document.createElement("h3");
-        subtitulo.textContent = tipo.titulo;
-
-        conteudo.appendChild(subtitulo);
-
-        const itens = carregar(tipo.chave);
-
-        if (itens.length === 0) {
-          const vazio = document.createElement("p");
-          vazio.textContent = "Nenhum item cadastrado.";
-          conteudo.appendChild(vazio);
-        }
-
-        itens.forEach((item, indice) => {
-
-          const linha = document.createElement("div");
-
-          linha.style.cssText = `
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 12px;
-            margin: 8px 0;
-            border: 1px solid var(--borda, #888);
-            border-radius: 8px;
-          `;
-
-          const nome = document.createElement("span");
-          nome.textContent = tipo.nome(item);
-
-          const botao = document.createElement("button");
-          botao.type = "button";
-          botao.textContent = "Excluir";
-
-          botao.style.cssText = `
-            background: #b91c1c;
-            color: white;
-            padding: 10px 14px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-          `;
-
-          botao.addEventListener("click", () => {
-
-            if (!confirm(
-              `Deseja excluir ${tipo.nome(item)}?`
-            )) {
-              return;
-            }
-
-            const atual = carregar(tipo.chave);
-
-            const posicao = item.id == null
-              ? indice
-              : atual.findIndex(
-                  x => String(x.id) === String(item.id)
-                );
-
-            if (
-              posicao < 0 ||
-              posicao >= atual.length
-            ) {
-              alert("Item não encontrado. Atualize a página.");
-              return;
-            }
-
-            atual.splice(posicao, 1);
-
-            try {
-              localStorage.setItem(
-                tipo.chave,
-                JSON.stringify(atual)
-              );
-
-              location.reload();
-
-            } catch {
-              alert("Erro ao excluir o item.");
-            }
-
-          });
-
-          linha.append(nome, botao);
-          conteudo.appendChild(linha);
-
-        });
-
-      });
-    }
-
-    painel.addEventListener("toggle", () => {
-      if (painel.open) mostrarItens();
-    });
-
-    mostrarItens();
-  }
-
-  if (document.readyState === "loading") {
-
-    document.addEventListener(
-      "DOMContentLoaded",
-      iniciarExclusao
-    );
-
-  } else {
-
-    iniciarExclusao();
-
-  }
-
-})();
