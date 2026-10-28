@@ -1,143 +1,129 @@
 
-// ==========================================
-// LOJA 3D - CONFIGURAÇÕES DO SUPABASE
-// ==========================================
+// =============================================
+// LOJA 3D - SUPABASE + WHATSAPP
+// =============================================
+
+// CONFIGURAÇÕES JÁ PREENCHIDAS
 
 const SUPABASE_URL =
   "https://ewcatvwkotqpjxvxtwki.supabase.co";
 
 const SUPABASE_PUBLISHABLE_KEY =
-  "COLE_A_PUBLISHABLE_KEY_AQUI";
+  "sb_publishable_hddmRKnrt40Tvhr8q0-eXA_1jbaZWIj";
 
-const ADMIN_UID = "COLE_SEU_UID_AQUI";
+const ADMIN_UID =
+  "e8634885-a9bb-4747-9e5e-4b7e11f77366";
 
 const WHATSAPP = "5544933007211";
 const BUCKET = "produtos";
 
-// ==========================================
+// =============================================
 // FUNÇÕES AUXILIARES
-// ==========================================
+// =============================================
 
 function criar(tag, classe = "", texto = "") {
   const el = document.createElement(tag);
-
   if (classe) el.className = classe;
-
   el.textContent = texto;
-
   return el;
 }
 
 function moeda(valor) {
-  return Number(valor).toLocaleString(
-    "pt-BR",
-    {
-      style: "currency",
-      currency: "BRL"
-    }
-  );
+  return Number(valor).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
 }
 
-// VALIDAR ENDEREÇO DAS IMAGENS
-function validarFoto(foto) {
+function fotoValida(foto) {
   if (!foto) return true;
 
   if (/^https?:\/\//i.test(foto)) {
     try {
-      return ["http:", "https:"].includes(
-        new URL(foto).protocol
+      const url = new URL(foto);
+      return (
+        url.protocol === "http:" ||
+        url.protocol === "https:"
       );
     } catch {
       return false;
     }
   }
 
-  const caminho = foto.replace(/^\.\//, "");
+  const local = foto.replace(/^\.\//, "");
 
   return (
-    caminho.startsWith("imagens/") &&
-    caminho.length > 8 &&
-    !caminho.includes("..") &&
-    !/[\\:?#]/.test(caminho)
+    local.startsWith("imagens/") &&
+    local.length > "imagens/".length &&
+    !local.includes("..") &&
+    !/[\\:?#]/.test(local)
   );
 }
 
-// ==========================================
+// =============================================
 // INICIAR LOJA
-// ==========================================
+// =============================================
 
-async function iniciarLoja() {
+function iniciarLoja() {
 
   const admin = document.querySelector(".admin");
-
   const topo = document.querySelector(".topo");
 
-  const catalogo = document.getElementById(
-    "catalogo"
-  );
+  const catalogo =
+    document.getElementById("catalogo");
 
-  const listaCores = document.getElementById(
-    "listaFilamentos"
-  );
+  const listaCores =
+    document.getElementById("listaFilamentos");
 
-  const formModelo = document.getElementById(
-    "formModelo"
-  );
+  const formModelo =
+    document.getElementById("formModelo");
 
-  const formFilamento = document.getElementById(
-    "formFilamento"
-  );
+  const formFilamento =
+    document.getElementById("formFilamento");
 
-  const filtro = document.getElementById(
-    "filtroCategoria"
-  );
+  const filtro =
+    document.getElementById("filtroCategoria");
 
-  const botaoTema = document.getElementById(
-    "alternarTema"
-  );
+  const botaoTema =
+    document.getElementById("alternarTema");
 
-  const fotoTexto = document.getElementById(
-    "fotoModelo"
-  );
+  const fotoTexto =
+    document.getElementById("fotoModelo");
 
   if (
-    !admin ||
-    !topo ||
-    !catalogo ||
-    !listaCores ||
-    !formModelo ||
-    !formFilamento
+    !admin || !topo || !catalogo ||
+    !listaCores || !formModelo || !formFilamento
   ) {
     console.error(
-      "Elementos da loja não encontrados. Confira o HTML."
+      "Confira os IDs do index.html."
     );
     return;
   }
 
-  // ========================================
+  // =========================================
   // MODO CLARO E ESCURO
-  // ========================================
+  // =========================================
 
   let tema = "escuro";
 
   try {
     if (
-      localStorage.getItem("loja3d_tema") ===
-      "claro"
+      localStorage.getItem("loja3d_tema") === "claro"
     ) {
       tema = "claro";
     }
-  } catch {}
+  } catch (erro) {
+    console.warn("Tema indisponível", erro);
+  }
 
   function aplicarTema() {
 
     document.documentElement.dataset.tema = tema;
 
     if (botaoTema) {
-      botaoTema.textContent =
-        tema === "escuro"
-          ? "☀️ Modo claro"
-          : "🌙 Modo escuro";
+      botaoTema.textContent = tema === "claro"
+        ? "🌙 Modo escuro"
+        : "☀️ Modo claro";
 
       botaoTema.setAttribute(
         "aria-pressed",
@@ -150,23 +136,18 @@ async function iniciarLoja() {
 
   botaoTema?.addEventListener("click", () => {
 
-    tema = tema === "escuro"
-      ? "claro"
-      : "escuro";
+    tema = tema === "claro" ? "escuro" : "claro";
 
     aplicarTema();
 
     try {
-      localStorage.setItem(
-        "loja3d_tema",
-        tema
-      );
+      localStorage.setItem("loja3d_tema", tema);
     } catch {}
   });
 
-  // ========================================
-  // MENSAGENS DO SITE
-  // ========================================
+  // =========================================
+  // NOTIFICAÇÕES
+  // =========================================
 
   const aviso = criar("div");
 
@@ -178,22 +159,22 @@ async function iniciarLoja() {
     left: 50%;
     transform: translateX(-50%);
     z-index: 10001;
-    background: #15803d;
-    color: white;
+    max-width: 90vw;
     padding: 12px 18px;
     border-radius: 10px;
-    max-width: 90vw;
-    box-shadow: 0 5px 20px #0006;
+    color: white;
+    background: #15803d;
+    box-shadow: 0 8px 25px #0007;
     display: none;
   `;
 
   document.body.appendChild(aviso);
 
-  let tempoAviso;
+  let timerAviso;
 
-  function informar(texto, erro = false) {
+  function informar(mensagem, erro = false) {
 
-    aviso.textContent = texto;
+    aviso.textContent = mensagem;
 
     aviso.style.background = erro
       ? "#b91c1c"
@@ -201,18 +182,152 @@ async function iniciarLoja() {
 
     aviso.style.display = "block";
 
-    clearTimeout(tempoAviso);
+    clearTimeout(timerAviso);
 
-    tempoAviso = setTimeout(() => {
+    timerAviso = setTimeout(() => {
       aviso.style.display = "none";
-    }, 6000);
+    }, 6500);
 
-    if (erro) console.error(texto);
+    if (erro) console.error(mensagem);
   }
 
-  // ========================================
-  // JANELA DE CONFIRMAÇÃO DE EXCLUSÃO
-  // ========================================
+  // =========================================
+  // CONECTAR AO SUPABASE
+  // =========================================
+
+  if (!window.supabase?.createClient) {
+
+    informar(
+      "Biblioteca Supabase não carregou. Confira o index.html.",
+      true
+    );
+
+    return;
+  }
+
+  const db = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
+  );
+
+  let modelos = [];
+  let filamentos = [];
+  let administrador = false;
+
+  // =========================================
+  // BOTÃO DE ADMINISTRAÇÃO
+  // =========================================
+
+  const botaoAdmin = criar(
+    "button",
+    "",
+    "⚙️ Administração"
+  );
+
+  botaoAdmin.type = "button";
+
+  botaoAdmin.style.cssText = `
+    padding: 10px 14px;
+    border-radius: 25px;
+    cursor: pointer;
+    background: var(--cartao);
+    color: var(--texto);
+    border: 1px solid var(--borda);
+  `;
+
+  topo.appendChild(botaoAdmin);
+
+  admin.hidden = true;
+
+  botaoAdmin.addEventListener("click", () => {
+
+    admin.hidden = !admin.hidden;
+
+    if (!admin.hidden) {
+      admin.scrollIntoView({
+        behavior: "smooth"
+      });
+    }
+  });
+
+  // =========================================
+  // PAINEL DE LOGIN
+  // =========================================
+
+  const painelLogin = criar("div", "painel");
+
+  admin.prepend(painelLogin);
+
+  const paineisCadastro = [
+    ...admin.querySelectorAll("details")
+  ];
+
+  // =========================================
+  // PAINEL DE EXCLUSÃO
+  // =========================================
+
+  let painelExcluir = document.getElementById(
+    "painelExcluirItens"
+  );
+
+  if (!painelExcluir) {
+
+    painelExcluir = criar("details", "painel");
+
+    painelExcluir.id = "painelExcluirItens";
+
+    painelExcluir.appendChild(
+      criar(
+        "summary",
+        "",
+        "🗑️ Gerenciar e excluir itens"
+      )
+    );
+
+    admin.appendChild(painelExcluir);
+  }
+
+  const listaGerenciar = criar("div");
+
+  listaGerenciar.style.paddingTop = "16px";
+
+  painelExcluir.appendChild(listaGerenciar);
+
+  if (!paineisCadastro.includes(painelExcluir)) {
+    paineisCadastro.push(painelExcluir);
+  }
+
+  // =========================================
+  // CAMPO PARA ESCOLHER FOTOS
+  // =========================================
+
+  const campoArquivo = criar("input");
+
+  campoArquivo.type = "file";
+  campoArquivo.id = "fotoArquivo";
+
+  campoArquivo.accept =
+    "image/png,image/jpeg,image/webp";
+
+  if (fotoTexto?.parentElement) {
+
+    const rotulo = criar(
+      "label",
+      "",
+      "Ou escolha uma foto do computador:"
+    );
+
+    rotulo.htmlFor = "fotoArquivo";
+
+    fotoTexto.parentElement.append(
+      rotulo,
+      campoArquivo
+    );
+  }
+
+  // =========================================
+  // CONFIRMAÇÃO DE EXCLUSÃO
+  // =========================================
 
   function confirmarExclusao(nome) {
 
@@ -232,30 +347,30 @@ async function iniciarLoja() {
 
       const caixa = criar("div");
 
-      caixa.style.cssText = `
-        width: 100%;
-        max-width: 420px;
-        padding: 24px;
-        border-radius: 14px;
-        background: var(--cartao, #172033);
-        color: var(--texto, white);
-        border: 1px solid var(--borda, #334155);
-      `;
-
       caixa.setAttribute("role", "dialog");
       caixa.setAttribute("aria-modal", "true");
 
       caixa.setAttribute(
         "aria-label",
-        "Confirmar exclusão"
+        "Confirmação de exclusão"
       );
+
+      caixa.style.cssText = `
+        max-width: 420px;
+        width: 100%;
+        padding: 24px;
+        border-radius: 14px;
+        background: var(--cartao);
+        color: var(--texto);
+        border: 1px solid var(--borda);
+      `;
 
       caixa.append(
         criar("h3", "", "Excluir item?"),
         criar(
           "p",
           "",
-          `Deseja excluir “${nome}”?`
+          "Deseja realmente excluir “" + nome + "”?"
         )
       );
 
@@ -284,50 +399,89 @@ async function iniciarLoja() {
       excluir.type = "button";
 
       cancelar.style.cssText = `
-        background: #64748b;
-        color: white;
         padding: 11px;
         border: 0;
         border-radius: 8px;
+        background: #64748b;
+        color: white;
       `;
 
       excluir.style.cssText = `
-        background: #b91c1c;
-        color: white;
         padding: 11px;
         border: 0;
         border-radius: 8px;
+        background: #b91c1c;
+        color: white;
       `;
 
-      function finalizar(valor) {
+      const anterior = document.activeElement;
+      let resolvido = false;
+
+      function finalizar(resposta) {
+
+        if (resolvido) return;
+
+        resolvido = true;
 
         document.removeEventListener(
           "keydown",
-          aoTeclar
+          tecla
         );
 
         fundo.remove();
-        resolve(valor);
+
+        if (anterior?.isConnected) {
+          anterior.focus();
+        }
+
+        resolve(resposta);
       }
 
-      function aoTeclar(e) {
+      function tecla(e) {
+
         if (e.key === "Escape") {
           finalizar(false);
         }
+
+        if (e.key === "Tab") {
+
+          if (
+            e.shiftKey &&
+            document.activeElement === cancelar
+          ) {
+            e.preventDefault();
+            excluir.focus();
+
+          } else if (
+            !e.shiftKey &&
+            document.activeElement === excluir
+          ) {
+            e.preventDefault();
+            cancelar.focus();
+          }
+        }
       }
 
-      cancelar.onclick = () => finalizar(false);
-      excluir.onclick = () => finalizar(true);
+      cancelar.addEventListener(
+        "click",
+        () => finalizar(false)
+      );
 
-      fundo.onclick = e => {
+      excluir.addEventListener(
+        "click",
+        () => finalizar(true)
+      );
+
+      fundo.addEventListener("click", e => {
+
         if (e.target === fundo) {
           finalizar(false);
         }
-      };
+      });
 
       document.addEventListener(
         "keydown",
-        aoTeclar
+        tecla
       );
 
       botoes.append(cancelar, excluir);
@@ -337,189 +491,13 @@ async function iniciarLoja() {
 
       document.body.appendChild(fundo);
 
-      excluir.focus();
+      cancelar.focus();
     });
   }
 
-  // ========================================
-  // CONECTAR AO SUPABASE
-  // ========================================
-
-  if (!window.supabase?.createClient) {
-
-    informar(
-      "A biblioteca Supabase não foi carregada. Confira o index.html.",
-      true
-    );
-
-    return;
-  }
-
-  if (
-    !SUPABASE_PUBLISHABLE_KEY ||
-    SUPABASE_PUBLISHABLE_KEY.includes("COLE_")
-  ) {
-
-    informar(
-      "Falta preencher SUPABASE_PUBLISHABLE_KEY no script.js.",
-      true
-    );
-
-    return;
-  }
-
-  if (
-    !ADMIN_UID ||
-    ADMIN_UID.includes("COLE_")
-  ) {
-
-    informar(
-      "Falta preencher ADMIN_UID no script.js.",
-      true
-    );
-
-    return;
-  }
-
-  const db = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_PUBLISHABLE_KEY
-  );
-
-  let modelos = [];
-  let filamentos = [];
-  let administrador = false;
-
-  // ========================================
-  // ÁREA ADMINISTRATIVA
-  // ========================================
-
-  const botaoAdmin = criar(
-    "button",
-    "",
-    "⚙️ Administração"
-  );
-
-  botaoAdmin.type = "button";
-
-  botaoAdmin.style.cssText = `
-    padding: 10px 14px;
-    border-radius: 25px;
-    background: var(--cartao);
-    color: var(--texto);
-    border: 1px solid var(--borda);
-    cursor: pointer;
-  `;
-
-  topo.appendChild(botaoAdmin);
-
-  admin.hidden = true;
-
-  botaoAdmin.onclick = () => {
-
-    admin.hidden = !admin.hidden;
-
-    if (!admin.hidden) {
-      admin.scrollIntoView({
-        behavior: "smooth"
-      });
-    }
-  };
-
-  const painelLogin = criar(
-    "div",
-    "painel"
-  );
-
-  admin.prepend(painelLogin);
-
-  const paineisCadastro = [
-    ...admin.querySelectorAll("details")
-  ];
-
-  // ========================================
-  // PAINEL PARA EXCLUIR ITENS
-  // ========================================
-
-  let painelExcluir = document.getElementById(
-    "painelExcluirItens"
-  );
-
-  if (!painelExcluir) {
-
-    painelExcluir = criar(
-      "details",
-      "painel"
-    );
-
-    painelExcluir.id = "painelExcluirItens";
-
-    painelExcluir.appendChild(
-      criar(
-        "summary",
-        "",
-        "🗑️ Gerenciar e excluir itens"
-      )
-    );
-
-    admin.appendChild(painelExcluir);
-  }
-
-  const listaGerenciar = criar("div");
-
-  listaGerenciar.style.paddingTop = "15px";
-
-  painelExcluir.appendChild(listaGerenciar);
-  paineisCadastro.push(painelExcluir);
-
-  // ========================================
-  // CAMPO PARA ENVIAR FOTO
-  // ========================================
-
-  const campoArquivo = criar("input");
-
-  campoArquivo.type = "file";
-
-  campoArquivo.accept =
-    "image/png,image/jpeg,image/webp";
-
-  campoArquivo.id = "fotoArquivo";
-
-  if (fotoTexto) {
-
-    const rotulo = criar(
-      "label",
-      "",
-      "Ou escolha uma foto do computador:"
-    );
-
-    rotulo.htmlFor = "fotoArquivo";
-
-    fotoTexto.parentElement.append(
-      rotulo,
-      campoArquivo
-    );
-  }
-
-  // ========================================
-  // VERIFICAR LOGIN
-  // ========================================
-
-  async function verificarSessao() {
-
-    const { data, error } = await db.auth.getUser();
-
-    administrador =
-      !error &&
-      data?.user?.id === ADMIN_UID;
-
-    mostrarLogin();
-    renderizar();
-  }
-
-  // ========================================
-  // INTERFACE DE LOGIN
-  // ========================================
+  // =========================================
+  // LOGIN E LOGOUT
+  // =========================================
 
   function mostrarLogin() {
 
@@ -547,19 +525,24 @@ async function iniciarLoja() {
 
       sair.type = "button";
 
-      sair.onclick = async () => {
+      sair.addEventListener("click", async () => {
 
         const { error } = await db.auth.signOut();
 
         if (error) {
-          return informar(error.message, true);
+          return informar(
+            "Erro ao sair: " + error.message,
+            true
+          );
         }
 
         administrador = false;
 
         mostrarLogin();
         renderizar();
-      };
+
+        informar("Você saiu da conta.");
+      });
 
       painelLogin.appendChild(sair);
 
@@ -574,17 +557,19 @@ async function iniciarLoja() {
       )
     );
 
-    const form = criar("form");
+    const formulario = criar("form");
 
     const email = criar("input");
+
     email.type = "email";
-    email.placeholder = "E-mail";
+    email.placeholder = "Seu e-mail";
     email.autocomplete = "username";
     email.required = true;
 
     const senha = criar("input");
+
     senha.type = "password";
-    senha.placeholder = "Senha";
+    senha.placeholder = "Sua senha";
     senha.autocomplete = "current-password";
     senha.required = true;
 
@@ -596,124 +581,91 @@ async function iniciarLoja() {
 
     entrar.type = "submit";
 
-    form.append(email, senha, entrar);
+    formulario.append(email, senha, entrar);
 
-    form.onsubmit = async e => {
+    formulario.addEventListener(
+      "submit",
+      async e => {
 
-      e.preventDefault();
+        e.preventDefault();
 
-      entrar.disabled = true;
+        entrar.disabled = true;
 
-      try {
+        try {
 
-        const { data, error } =
-          await db.auth.signInWithPassword({
-            email: email.value.trim(),
-            password: senha.value
-          });
+          const { data, error } =
+            await db.auth.signInWithPassword({
+              email: email.value.trim(),
+              password: senha.value
+            });
 
-        if (error) throw error;
+          if (error) throw error;
 
-        if (data.user?.id !== ADMIN_UID) {
+          if (data.user?.id !== ADMIN_UID) {
 
-          await db.auth.signOut();
+            await db.auth.signOut();
 
-          throw new Error(
-            "Esta conta não é administradora."
+            throw new Error(
+              "Esta conta não é a administradora autorizada."
+            );
+          }
+
+          administrador = true;
+
+          mostrarLogin();
+          renderizar();
+
+          informar("Login realizado com sucesso!");
+
+        } catch (erro) {
+
+          informar(
+            "Erro no login: " + erro.message,
+            true
           );
+
+        } finally {
+          entrar.disabled = false;
         }
-
-        administrador = true;
-
-        mostrarLogin();
-        renderizar();
-
-        informar("Login realizado!");
-
-      } catch (erro) {
-
-        informar(
-          "Erro no login: " + erro.message,
-          true
-        );
-
-      } finally {
-        entrar.disabled = false;
       }
-    };
+    );
 
-    painelLogin.appendChild(form);
+    painelLogin.appendChild(formulario);
   }
 
-  // ========================================
-  // CARREGAR PRODUTOS DO SUPABASE
-  // ========================================
+  // VERIFICAR SESSÃO SALVA
 
-  async function carregarCatalogo() {
+  async function verificarSessao() {
 
-    const [resModelos, resFilamentos] =
-      await Promise.all([
+    const { data, error } = await db.auth.getUser();
 
-        db.from("modelos")
-          .select("*")
-          .order("criado_em", {
-            ascending: false
-          }),
+    administrador =
+      !error &&
+      data?.user?.id === ADMIN_UID;
 
-        db.from("filamentos")
-          .select("*")
-          .order("criado_em", {
-            ascending: false
-          })
-
-      ]);
-
-    if (resModelos.error) {
-
-      informar(
-        "Erro ao buscar modelos: " +
-        resModelos.error.message,
-        true
-      );
-
-    } else {
-
-      modelos = resModelos.data || [];
-    }
-
-    if (resFilamentos.error) {
-
-      informar(
-        "Erro ao buscar filamentos: " +
-        resFilamentos.error.message,
-        true
-      );
-
-    } else {
-
-      filamentos = resFilamentos.data || [];
-    }
-
+    mostrarLogin();
     renderizar();
   }
 
-  // ========================================
-  // EXCLUIR PRODUTO DO SUPABASE
-  // ========================================
+  // =========================================
+  // EXCLUIR PRODUTOS DO SUPABASE
+  // =========================================
 
   async function excluirItem(tipo, item) {
 
     if (!administrador) {
 
-      return informar(
-        "Entre como administrador.",
+      informar(
+        "Entre como administrador para excluir.",
         true
       );
+
+      return;
     }
 
     const nome = tipo === "modelo"
       ? item.nome
-      : `${item.tipo} - ${item.cor}`;
+      : item.tipo + " - " + item.cor;
 
     if (!(await confirmarExclusao(nome))) {
       return;
@@ -731,56 +683,77 @@ async function iniciarLoja() {
 
     if (error) {
 
-      return informar(
+      informar(
         "Erro ao excluir: " + error.message,
         true
       );
+
+      return;
     }
 
     if (!data?.length) {
 
-      return informar(
-        "Exclusão não autorizada. Confira as regras RLS.",
+      informar(
+        "Exclusão bloqueada. Confira as políticas RLS do Supabase.",
         true
       );
+
+      return;
     }
 
-    // REMOVER FOTO ENVIADA PELO FORMULÁRIO
+    // REMOVER FOTO ENVIADA PELA LOJA
+
+    let erroFoto = false;
+
     if (tipo === "modelo" && item.foto) {
 
       const prefixo =
-        `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/catalogo/`;
+        SUPABASE_URL +
+        "/storage/v1/object/public/" +
+        BUCKET + "/";
 
       if (item.foto.startsWith(prefixo)) {
 
-        const nomeArquivo = decodeURIComponent(
+        const caminho = decodeURIComponent(
           item.foto
             .slice(prefixo.length)
             .split("?")[0]
         );
 
-        const resultado = await db.storage
-          .from(BUCKET)
-          .remove([`catalogo/${nomeArquivo}`]);
+        if (
+          caminho.startsWith("catalogo/") &&
+          !caminho.includes("..")
+        ) {
 
-        if (resultado.error) {
+          const resposta = await db.storage
+            .from(BUCKET)
+            .remove([caminho]);
 
-          console.warn(
-            "Foto não removida:",
-            resultado.error.message
-          );
+          if (resposta.error) {
+
+            erroFoto = true;
+
+            console.warn(
+              "Foto não excluída:",
+              resposta.error.message
+            );
+          }
         }
       }
     }
 
     await carregarCatalogo();
 
-    informar("Item excluído com sucesso!");
+    informar(
+      erroFoto
+        ? "Item excluído, mas a foto ainda precisa ser removida do Storage."
+        : "Item excluído com sucesso!"
+    );
   }
 
-  // ========================================
-  // MOSTRAR GERENCIAMENTO
-  // ========================================
+  // =========================================
+  // GERENCIAR E EXCLUIR ITENS
+  // =========================================
 
   function mostrarGerenciamento() {
 
@@ -822,13 +795,13 @@ async function iniciarLoja() {
 
         linha.style.cssText = `
           display: flex;
-          justify-content: space-between;
           align-items: center;
+          justify-content: space-between;
           gap: 12px;
-          border: 1px solid var(--borda);
-          border-radius: 9px;
           padding: 10px;
           margin: 8px 0;
+          border-radius: 9px;
+          border: 1px solid var(--borda);
         `;
 
         const nome = criar(
@@ -836,42 +809,42 @@ async function iniciarLoja() {
           "",
           tipo === "modelo"
             ? item.nome
-            : `${item.tipo} - ${item.cor}`
+            : item.tipo + " - " + item.cor
         );
 
         nome.style.overflowWrap = "anywhere";
 
-        const excluir = criar(
+        const botao = criar(
           "button",
           "",
           "🗑️ Excluir"
         );
 
-        excluir.type = "button";
+        botao.type = "button";
 
-        excluir.style.cssText = `
-          background: #b91c1c;
-          color: white;
+        botao.style.cssText = `
+          padding: 10px;
           border: 0;
           border-radius: 8px;
-          padding: 10px;
+          color: white;
+          background: #b91c1c;
           cursor: pointer;
         `;
 
-        excluir.onclick = () => {
+        botao.addEventListener("click", () => {
           excluirItem(tipo, item);
-        };
+        });
 
-        linha.append(nome, excluir);
+        linha.append(nome, botao);
 
         listaGerenciar.appendChild(linha);
       });
     }
   }
 
-  // ========================================
+  // =========================================
   // MOSTRAR FILAMENTOS
-  // ========================================
+  // =========================================
 
   function mostrarFilamentos() {
 
@@ -892,7 +865,10 @@ async function iniciarLoja() {
 
     filamentos.forEach(f => {
 
-      const linha = criar("div", "cor-item");
+      const linha = criar(
+        "div",
+        "cor-item"
+      );
 
       const bolinha = criar(
         "div",
@@ -901,14 +877,13 @@ async function iniciarLoja() {
 
       bolinha.style.backgroundColor = f.hex;
 
+      const nome =
+        f.tipo + " - " + f.cor +
+        (f.marca ? " (" + f.marca + ")" : "");
+
       linha.append(
         bolinha,
-        criar(
-          "span",
-          "cor-nome",
-          `${f.tipo} - ${f.cor}` +
-          (f.marca ? ` (${f.marca})` : "")
-        )
+        criar("span", "cor-nome", nome)
       );
 
       if (administrador) {
@@ -921,9 +896,14 @@ async function iniciarLoja() {
 
         excluir.type = "button";
 
-        excluir.onclick = () => {
+        excluir.setAttribute(
+          "aria-label",
+          "Excluir " + nome
+        );
+
+        excluir.addEventListener("click", () => {
           excluirItem("filamento", f);
-        };
+        });
 
         linha.appendChild(excluir);
       }
@@ -932,9 +912,9 @@ async function iniciarLoja() {
     });
   }
 
-  // ========================================
+  // =========================================
   // MOSTRAR MODELOS 3D
-  // ========================================
+  // =========================================
 
   function mostrarModelos() {
 
@@ -942,11 +922,12 @@ async function iniciarLoja() {
 
     const categoria = filtro?.value || "Todos";
 
-    const visiveis = modelos.filter(
-      m =>
+    const visiveis = modelos.filter(m => {
+      return (
         categoria === "Todos" ||
         m.categoria === categoria
-    );
+      );
+    });
 
     if (!visiveis.length) {
 
@@ -963,17 +944,20 @@ async function iniciarLoja() {
 
     visiveis.forEach(m => {
 
-      const card = criar("article", "card");
+      const card = criar(
+        "article",
+        "card"
+      );
 
-      // FOTO
-      const semFoto = () =>
-        criar(
-          "div",
-          "foto-produto sem-foto",
-          "3D"
-        );
+      // FOTO DO MODELO
 
-      if (m.foto) {
+      const semFoto = () => criar(
+        "div",
+        "foto-produto sem-foto",
+        "3D"
+      );
+
+      if (m.foto && fotoValida(m.foto)) {
 
         const img = criar(
           "img",
@@ -996,19 +980,26 @@ async function iniciarLoja() {
       }
 
       // INFORMAÇÕES
+
       const info = criar(
         "div",
         "info-produto"
       );
 
       info.append(
-        criar("span", "tag", m.categoria),
+        criar(
+          "span",
+          "tag",
+          m.categoria || "Outros"
+        ),
+
         criar("h3", "", m.nome),
+
         criar(
           "p",
           "descricao",
           m.descricao ||
-          "Modelo impresso em 3D."
+          "Modelo produzido em impressão 3D."
         )
       );
 
@@ -1028,6 +1019,7 @@ async function iniciarLoja() {
       );
 
       // PERSONALIZAÇÃO
+
       const personalizacao = criar(
         "div",
         "personalizacao"
@@ -1060,7 +1052,7 @@ async function iniciarLoja() {
           const opt = criar(
             "option",
             "",
-            `${f.tipo} - ${f.cor}`
+            f.tipo + " - " + f.cor
           );
 
           opt.value = f.id;
@@ -1094,7 +1086,8 @@ async function iniciarLoja() {
 
       info.appendChild(personalizacao);
 
-      // WHATSAPP
+      // PEDIDO VIA WHATSAPP
+
       const pedir = criar(
         "a",
         "botao-whatsapp",
@@ -1104,10 +1097,10 @@ async function iniciarLoja() {
       pedir.target = "_blank";
       pedir.rel = "noopener noreferrer";
 
-      function atualizarWhatsApp() {
+      function atualizarPedido() {
 
-        const filamento = filamentos.find(
-          f => String(f.id) === seletor.value
+        const f = filamentos.find(
+          x => String(x.id) === seletor.value
         );
 
         const qtd = Math.max(
@@ -1120,54 +1113,62 @@ async function iniciarLoja() {
           )
         );
 
+        const material = f
+          ? f.tipo + " - " + f.cor
+          : "A combinar";
+
         let mensagem =
-          "Olá! Quero encomendar uma impressão 3D.\n\n" +
-          `Modelo: ${m.nome}\n` +
-          `Categoria: ${m.categoria}\n` +
-          `Material e cor: ${
-            filamento
-              ? `${filamento.tipo} - ${filamento.cor}`
-              : "A combinar"
-          }\n` +
-          `Quantidade: ${qtd}\n`;
+          "Olá! Gostaria de encomendar uma impressão 3D.\n\n" +
+
+          "Modelo: " + m.nome + "\n" +
+
+          "Categoria: " + m.categoria + "\n" +
+
+          "Cor e material: " + material + "\n" +
+
+          "Quantidade: " + qtd + "\n";
 
         if (temPreco) {
 
           mensagem +=
-            `Preço unitário: ${moeda(m.preco)}\n` +
-            `Total estimado: ${
-              moeda(Number(m.preco) * qtd)
-            }\n`;
+            "Preço unitário: " +
+            moeda(m.preco) + "\n" +
+
+            "Total estimado: " +
+            moeda(Number(m.preco) * qtd) + "\n";
         }
 
         mensagem +=
           "\nGostaria de confirmar a disponibilidade e o valor final!";
 
         pedir.href =
-          `https://wa.me/${WHATSAPP}?text=` +
+          "https://wa.me/" +
+          WHATSAPP +
+          "?text=" +
           encodeURIComponent(mensagem);
       }
 
       seletor.addEventListener(
         "change",
-        atualizarWhatsApp
+        atualizarPedido
       );
 
       quantidade.addEventListener(
         "input",
-        atualizarWhatsApp
+        atualizarPedido
       );
 
       pedir.addEventListener(
         "click",
-        atualizarWhatsApp
+        atualizarPedido
       );
 
-      atualizarWhatsApp();
+      atualizarPedido();
 
       info.appendChild(pedir);
 
       // EXCLUIR MODELO
+
       if (administrador) {
 
         const excluir = criar(
@@ -1178,31 +1179,89 @@ async function iniciarLoja() {
 
         excluir.type = "button";
 
-        excluir.onclick = () => {
+        excluir.addEventListener("click", () => {
           excluirItem("modelo", m);
-        };
+        });
 
         info.appendChild(excluir);
       }
 
       card.appendChild(info);
+
       catalogo.appendChild(card);
     });
   }
 
-  // ========================================
-  // ATUALIZAR A TELA
-  // ========================================
+  // =========================================
+  // ATUALIZAR CATÁLOGO
+  // =========================================
 
   function renderizar() {
+
     mostrarFilamentos();
+
     mostrarModelos();
+
     mostrarGerenciamento();
   }
 
-  // ========================================
-  // ENVIAR FOTO AO SUPABASE STORAGE
-  // ========================================
+  // =========================================
+  // CARREGAR DADOS DO SUPABASE
+  // =========================================
+
+  async function carregarCatalogo() {
+
+    const [
+      resultadoModelos,
+      resultadoFilamentos
+    ] = await Promise.all([
+
+      db.from("modelos")
+        .select("*")
+        .order("criado_em", {
+          ascending: false
+        }),
+
+      db.from("filamentos")
+        .select("*")
+        .order("criado_em", {
+          ascending: false
+        })
+
+    ]);
+
+    if (resultadoModelos.error) {
+
+      informar(
+        "Erro ao carregar modelos: " +
+        resultadoModelos.error.message,
+        true
+      );
+
+    } else {
+
+      modelos = resultadoModelos.data || [];
+    }
+
+    if (resultadoFilamentos.error) {
+
+      informar(
+        "Erro ao carregar filamentos: " +
+        resultadoFilamentos.error.message,
+        true
+      );
+
+    } else {
+
+      filamentos = resultadoFilamentos.data || [];
+    }
+
+    renderizar();
+  }
+
+  // =========================================
+  // ENVIAR FOTO PARA SUPABASE STORAGE
+  // =========================================
 
   async function enviarFoto(arquivo) {
 
@@ -1215,24 +1274,31 @@ async function iniciarLoja() {
     if (!extensoes[arquivo.type]) {
 
       throw new Error(
-        "Use uma imagem JPG, PNG ou WebP."
+        "Use uma imagem PNG, JPG ou WebP."
       );
     }
 
     if (arquivo.size > 5 * 1024 * 1024) {
 
       throw new Error(
-        "A foto deve ter até 5 MB."
+        "A imagem deve ter no máximo 5 MB."
       );
     }
 
-    const id = crypto.randomUUID
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random()
-          .toString(36).slice(2)}`;
+    const id =
+      typeof crypto !== "undefined" &&
+      crypto.randomUUID
+
+        ? crypto.randomUUID()
+
+        : Date.now() + "-" +
+          Math.random().toString(36).slice(2);
 
     const caminho =
-      `catalogo/${id}.${extensoes[arquivo.type]}`;
+      "catalogo/" +
+      id +
+      "." +
+      extensoes[arquivo.type];
 
     const { error } = await db.storage
       .from(BUCKET)
@@ -1248,14 +1314,14 @@ async function iniciarLoja() {
       .getPublicUrl(caminho);
 
     return {
-      url: data.publicUrl,
-      caminho
+      foto: data.publicUrl,
+      caminho: caminho
     };
   }
 
-  // ========================================
-  // CADASTRAR MODELO NO SUPABASE
-  // ========================================
+  // =========================================
+  // CADASTRAR MODELO 3D
+  // =========================================
 
   formModelo.addEventListener(
     "submit",
@@ -1266,7 +1332,7 @@ async function iniciarLoja() {
       if (!administrador) {
 
         return informar(
-          "Entre como administrador.",
+          "Faça login para cadastrar.",
           true
         );
       }
@@ -1283,31 +1349,31 @@ async function iniciarLoja() {
         "descricaoModelo"
       ).value.trim();
 
-      const precoTexto = document.getElementById(
+      const textoPreco = document.getElementById(
         "precoModelo"
       ).value;
 
       const fotoDigitada =
-        fotoTexto?.value.trim() || "";
+        (fotoTexto?.value || "").trim();
 
       const arquivo = campoArquivo.files?.[0];
 
-      const preco = precoTexto === ""
+      const preco = textoPreco === ""
         ? null
-        : Number(precoTexto);
+        : Number(textoPreco);
 
       if (!nome) {
 
         return informar(
-          "Preencha o nome do modelo.",
+          "Digite o nome do modelo.",
           true
         );
       }
 
-      if (!validarFoto(fotoDigitada)) {
+      if (!fotoValida(fotoDigitada)) {
 
         return informar(
-          "Use imagens/foto.png ou um link https:// válido.",
+          "Endereço da foto inválido.",
           true
         );
       }
@@ -1318,7 +1384,7 @@ async function iniciarLoja() {
       ) {
 
         return informar(
-          "Preço inválido.",
+          "Digite um preço válido.",
           true
         );
       }
@@ -1341,7 +1407,8 @@ async function iniciarLoja() {
             arquivo
           );
 
-          foto = resultado.url;
+          foto = resultado.foto;
+
           caminhoNovo = resultado.caminho;
         }
 
@@ -1359,7 +1426,9 @@ async function iniciarLoja() {
 
         formModelo.reset();
 
-        if (filtro) filtro.value = "Todos";
+        if (filtro) {
+          filtro.value = "Todos";
+        }
 
         await carregarCatalogo();
 
@@ -1378,8 +1447,8 @@ async function iniciarLoja() {
           if (limpeza.error) {
 
             console.warn(
-              "Falha ao limpar foto:",
-              limpeza.error
+              "Foto não removida:",
+              limpeza.error.message
             );
           }
         }
@@ -1397,9 +1466,9 @@ async function iniciarLoja() {
     }
   );
 
-  // ========================================
-  // CADASTRAR FILAMENTO NO SUPABASE
-  // ========================================
+  // =========================================
+  // CADASTRAR FILAMENTO
+  // =========================================
 
   formFilamento.addEventListener(
     "submit",
@@ -1410,7 +1479,7 @@ async function iniciarLoja() {
       if (!administrador) {
 
         return informar(
-          "Entre como administrador.",
+          "Faça login para cadastrar.",
           true
         );
       }
@@ -1434,7 +1503,7 @@ async function iniciarLoja() {
       if (!cor) {
 
         return informar(
-          "Preencha a cor.",
+          "Digite a cor do filamento.",
           true
         );
       }
@@ -1481,24 +1550,35 @@ async function iniciarLoja() {
     }
   );
 
+  // =========================================
+  // FILTRAR CATEGORIAS
+  // =========================================
+
   filtro?.addEventListener(
     "change",
     mostrarModelos
   );
 
-  // ========================================
-  // INICIAR CATÁLOGO E LOGIN
-  // ========================================
+  // =========================================
+  // INICIAR BANCO E LOGIN
+  // =========================================
 
-  await Promise.all([
+  Promise.all([
     carregarCatalogo(),
     verificarSessao()
-  ]);
+  ]).catch(erro => {
+
+    informar(
+      "Erro ao iniciar a loja: " +
+      erro.message,
+      true
+    );
+  });
 }
 
-// ==========================================
-// AGUARDAR O HTML CARREGAR
-// ==========================================
+// =============================================
+// AGUARDAR CARREGAMENTO DO HTML
+// =============================================
 
 if (document.readyState === "loading") {
 
