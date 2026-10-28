@@ -1,87 +1,1025 @@
 
-/* ESTILO DAS FOTOS DOS FILAMENTOS */
+/* ==========================================
+   LOJA 3D - CSS COMPLETO
+   ========================================== */
+
+/* CORES DO MODO ESCURO */
+
+:root {
+  color-scheme: dark;
+
+  --fundo: #0b1020;
+  --superficie: #121b2d;
+  --cartao: #192439;
+  --texto: #f1f5f9;
+  --texto-secundario: #94a3b8;
+  --borda: #334155;
+
+  --primaria: #3b82f6;
+  --primaria-hover: #2563eb;
+
+  --verde: #16a34a;
+  --verde-hover: #15803d;
+
+  --vermelho: #dc2626;
+  --vermelho-hover: #b91c1c;
+
+  --dourado: #d4af37;
+
+  --sombra: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* CORES DO MODO CLARO */
+
+:root[data-tema="claro"] {
+  color-scheme: light;
+
+  --fundo: #f1f5f9;
+  --superficie: #ffffff;
+  --cartao: #ffffff;
+  --texto: #0f172a;
+  --texto-secundario: #475569;
+  --borda: #cbd5e1;
+
+  --primaria: #2563eb;
+  --primaria-hover: #1d4ed8;
+
+  --verde: #15803d;
+  --verde-hover: #166534;
+
+  --vermelho: #dc2626;
+  --vermelho-hover: #b91c1c;
+
+  --dourado: #b8860b;
+
+  --sombra: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+/* ==========================================
+   CONFIGURAÇÕES GERAIS
+   ========================================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--fundo);
+  color: var(--texto);
+  line-height: 1.6;
+  min-height: 100vh;
+
+  transition:
+    background 0.25s ease,
+    color 0.25s ease;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+select {
+  cursor: pointer;
+}
+
+button {
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+button:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
 
 [hidden] {
   display: none !important;
 }
 
+:focus-visible {
+  outline: 3px solid var(--dourado);
+  outline-offset: 3px;
+}
+
+/* ==========================================
+   CONTAINER PRINCIPAL
+   ========================================== */
+
+.container {
+  width: 100%;
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 0 22px;
+}
+
+/* ==========================================
+   CABEÇALHO
+   ========================================== */
+
+header {
+  padding-top: 20px;
+}
+
+.topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  padding: 16px 20px;
+
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 16px;
+  box-shadow: var(--sombra);
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--dourado);
+
+  margin-right: auto;
+}
+
+/* BOTÕES DO CABEÇALHO */
+
+.topo button {
+  background: var(--cartao);
+  color: var(--texto);
+  border: 1px solid var(--borda);
+
+  padding: 10px 16px;
+  border-radius: 30px;
+
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.topo button:hover {
+  background: var(--primaria);
+  color: #ffffff;
+  border-color: var(--primaria);
+}
+
+/* ==========================================
+   APRESENTAÇÃO
+   ========================================== */
+
+.apresentacao {
+  text-align: center;
+  margin-top: 24px;
+  padding: 75px 25px;
+
+  border-radius: 20px;
+  border: 1px solid var(--borda);
+
+  background:
+    radial-gradient(
+      ellipse at top,
+      rgba(59, 130, 246, 0.14),
+      transparent 65%
+    ),
+    var(--superficie);
+}
+
+.destaque {
+  display: inline-block;
+
+  padding: 7px 16px;
+  margin-bottom: 20px;
+
+  color: var(--dourado);
+  border: 1px solid var(--dourado);
+
+  border-radius: 30px;
+
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.apresentacao h1 {
+  font-size: clamp(32px, 5vw, 54px);
+  line-height: 1.2;
+
+  margin-bottom: 20px;
+  color: var(--texto);
+}
+
+.apresentacao p {
+  max-width: 700px;
+  margin: 0 auto;
+
+  color: var(--texto-secundario);
+  font-size: 17px;
+}
+
+/* ==========================================
+   SEÇÕES GERAIS
+   ========================================== */
+
+.secao {
+  margin-top: 55px;
+  margin-bottom: 45px;
+}
+
+.titulo-secao h2 {
+  font-size: clamp(23px, 3vw, 30px);
+  margin-bottom: 8px;
+}
+
+.subtexto {
+  color: var(--texto-secundario);
+  margin-bottom: 22px;
+  font-size: 15px;
+}
+
+/* ==========================================
+   PAINEL ADMINISTRATIVO
+   ========================================== */
+
+.admin {
+  margin-top: 40px;
+  padding: 26px;
+
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 18px;
+  box-shadow: var(--sombra);
+}
+
+.admin h2 {
+  margin-bottom: 8px;
+  font-size: 25px;
+}
+
+.admin h3 {
+  margin-bottom: 14px;
+}
+
+.painel {
+  background: var(--cartao);
+  border: 1px solid var(--borda);
+
+  border-radius: 12px;
+  padding: 20px;
+
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+.painel summary {
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 17px;
+
+  list-style-position: inside;
+}
+
+.painel[open] summary {
+  margin-bottom: 20px;
+}
+
+/* ==========================================
+   FORMULÁRIOS
+   ========================================== */
+
+.campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  min-width: 0;
+}
+
+.campo.completo {
+  grid-column: 1 / -1;
+}
+
+.campo label,
+.painel label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+input,
+select,
+textarea {
+  max-width: 100%;
+  min-width: 0;
+
+  background: var(--superficie);
+  color: var(--texto);
+
+  border: 1px solid var(--borda);
+  border-radius: 9px;
+
+  padding: 12px;
+  font-size: 15px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primaria);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--texto-secundario);
+  opacity: 0.9;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* CAMPO DE COR */
+
+input[type="color"] {
+  width: 85px;
+  height: 48px;
+  padding: 5px;
+
+  cursor: pointer;
+}
+
+/* CAMPO DE ARQUIVO */
+
+input[type="file"] {
+  display: block;
+  width: 100%;
+  padding: 10px;
+
+  background: var(--superficie);
+  border: 1px dashed var(--borda);
+  border-radius: 9px;
+}
+
+input[type="file"]::file-selector-button {
+  background: var(--primaria);
+  color: white;
+
+  padding: 9px 14px;
+  margin-right: 12px;
+
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+/* TEXTOS DE AJUDA */
+
+.ajuda,
+small {
+  font-size: 12px;
+  color: var(--texto-secundario);
+}
+
+/* LOGIN */
+
+.admin .painel form > input {
+  display: block;
+  width: 100%;
+  max-width: 430px;
+  margin: 10px 0 14px;
+}
+
+/* ==========================================
+   BOTÕES DE CADASTRO
+   ========================================== */
+
+.btn-salvar {
+  display: inline-block;
+
+  background: var(--primaria);
+  color: #ffffff;
+
+  border: none;
+  border-radius: 10px;
+
+  padding: 12px 20px;
+  margin-top: 20px;
+
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-salvar:hover:not(:disabled) {
+  background: var(--primaria-hover);
+}
+
+/* ==========================================
+   LISTA DE FILAMENTOS
+   ========================================== */
+
+.lista-cores {
+  display: grid;
+  grid-template-columns:
+    repeat(auto-fill, minmax(min(100%, 285px), 1fr));
+
+  gap: 16px;
+  margin-top: 20px;
+}
+
+/* CARTÃO DO FILAMENTO */
+
 .lista-cores .cor-item {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+
   gap: 12px;
   min-width: 0;
+  min-height: 95px;
+
+  padding: 14px;
+
+  background: var(--cartao);
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+
+  box-shadow: var(--sombra);
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
+
+.lista-cores .cor-item:hover {
+  border-color: var(--primaria);
+  transform: translateY(-2px);
+}
+
+/* FOTO DO FILAMENTO */
 
 .foto-filamento {
-  width: 68px;
-  height: 68px;
-  min-width: 68px;
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+
   object-fit: cover;
-  border-radius: 10px;
-  border: 1px solid var(--borda, #64748b);
-  background: #e2e8f0;
+
+  border-radius: 12px;
+  border: 1px solid var(--borda);
+
+  background: var(--superficie);
 }
 
-.lista-cores .cor-bolinha {
-  flex: 0 0 auto;
+/* BOLINHA DE COR */
+
+.cor-bolinha {
+  display: block;
+
+  width: 25px;
+  height: 25px;
+
+  flex: 0 0 25px;
+
+  border-radius: 50%;
+
+  border: 2px solid var(--borda);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
 }
 
-.lista-cores .cor-nome {
+/* NOME DO FILAMENTO */
+
+.cor-nome {
+  flex: 1 1 100px;
   min-width: 0;
+
+  font-weight: bold;
+  font-size: 14px;
+
   overflow-wrap: anywhere;
 }
 
-.lista-cores .cor-remover {
-  margin-left: auto;
-  cursor: pointer;
-}
-
-/* PRÉVIA DA FOTO */
-
-.preview-foto {
-  display: block;
-  width: 120px;
-  height: 120px;
-  object-fit: cover;
-  border-radius: 10px;
-  margin: 8px 0;
-  border: 1px solid var(--borda, #64748b);
-}
-
-/* CAMPOS DO LOGIN */
-
-.admin .painel input[type="email"],
-.admin .painel input[type="password"] {
-  display: block;
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 420px;
-  margin: 8px 0 12px;
-  padding: 10px;
-}
-
-.admin input[type="file"] {
-  display: block;
-  max-width: 100%;
-  margin: 8px 0;
-}
-
-/* BOTÃO DE EDITAR FOTO */
+/* EDITAR FOTO */
 
 .editar-foto-filamento {
-  border: 1px solid var(--borda, #64748b);
-  background: var(--cartao, #334155);
-  color: var(--texto, #fff);
-  padding: 7px 9px;
+  background: var(--primaria);
+  color: white;
+
+  border: none;
   border-radius: 8px;
+
+  padding: 9px 11px;
+
+  font-size: 12px;
+  font-weight: bold;
+
   cursor: pointer;
-  white-space: nowrap;
 }
 
-/* CELULARES */
+.editar-foto-filamento:hover {
+  background: var(--primaria-hover);
+}
+
+/* EXCLUIR FILAMENTO */
+
+.cor-remover {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+
+  width: 34px;
+  height: 34px;
+
+  margin-left: auto;
+
+  background: var(--vermelho);
+  color: white;
+
+  border: none;
+  border-radius: 8px;
+
+  font-size: 21px;
+  cursor: pointer;
+}
+
+.cor-remover:hover {
+  background: var(--vermelho-hover);
+}
+
+/* ==========================================
+   CATÁLOGO DE PRODUTOS
+   ========================================== */
+
+.barra-catalogo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.barra-catalogo .subtexto {
+  margin-bottom: 0;
+}
+
+#filtroCategoria {
+  min-width: 210px;
+  max-width: 100%;
+}
+
+/* GRADE DOS PRODUTOS */
+
+.grade-produtos {
+  display: grid;
+
+  grid-template-columns:
+    repeat(auto-fill, minmax(min(100%, 275px), 1fr));
+
+  gap: 22px;
+}
+
+/* CARTÃO DO PRODUTO */
+
+.card {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+
+  overflow: hidden;
+
+  background: var(--cartao);
+  border: 1px solid var(--borda);
+  border-radius: 16px;
+
+  box-shadow: var(--sombra);
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  border-color: var(--primaria);
+}
+
+/* FOTO DO MODELO */
+
+.foto-produto {
+  display: block;
+
+  width: 100%;
+  height: 235px;
+
+  object-fit: cover;
+
+  background: var(--superficie);
+}
+
+/* QUANDO NÃO HÁ FOTO */
+
+.sem-foto {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  width: 100%;
+  height: 235px;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--superficie),
+      var(--cartao)
+    );
+
+  color: var(--texto-secundario);
+
+  font-size: 48px;
+  font-weight: 900;
+  letter-spacing: 4px;
+}
+
+/* INFORMAÇÕES DO PRODUTO */
+
+.info-produto {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+
+  gap: 12px;
+  padding: 20px;
+
+  min-width: 0;
+}
+
+.info-produto h3 {
+  font-size: 20px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* CATEGORIA */
+
+.tag {
+  align-self: flex-start;
+
+  padding: 5px 11px;
+
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--primaria);
+
+  border-radius: 30px;
+
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* DESCRIÇÃO */
+
+.descricao {
+  color: var(--texto-secundario);
+  font-size: 14px;
+
+  overflow-wrap: anywhere;
+}
+
+/* PREÇO */
+
+.preco {
+  color: var(--dourado);
+
+  font-size: 24px;
+  font-weight: 800;
+
+  margin-top: auto;
+}
+
+/* ==========================================
+   PERSONALIZAÇÃO DO PRODUTO
+   ========================================== */
+
+.personalizacao {
+  display: grid;
+  grid-template-columns: 1fr 105px;
+
+  gap: 12px;
+
+  margin-top: 8px;
+}
+
+.personalizacao label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+
+  min-width: 0;
+
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.personalizacao select,
+.personalizacao input {
+  width: 100%;
+  min-width: 0;
+
+  padding: 10px;
+  font-size: 13px;
+}
+
+/* ==========================================
+   BOTÃO WHATSAPP
+   ========================================== */
+
+.botao-whatsapp {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  width: 100%;
+
+  padding: 13px 14px;
+  margin-top: 8px;
+
+  background: var(--verde);
+  color: #ffffff;
+
+  border: none;
+  border-radius: 10px;
+
+  text-align: center;
+
+  font-size: 14px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.botao-whatsapp:hover {
+  background: var(--verde-hover);
+  transform: translateY(-1px);
+}
+
+/* ==========================================
+   BOTÃO EXCLUIR MODELO
+   ========================================== */
+
+.btn-remover {
+  display: block;
+  width: 100%;
+
+  padding: 11px;
+
+  background: var(--vermelho);
+  color: #ffffff;
+
+  border: none;
+  border-radius: 9px;
+
+  font-size: 13px;
+  font-weight: bold;
+
+  cursor: pointer;
+}
+
+.btn-remover:hover {
+  background: var(--vermelho-hover);
+}
+
+/* ==========================================
+   MENSAGENS SEM PRODUTOS
+   ========================================== */
+
+.mensagem-vazia {
+  grid-column: 1 / -1;
+
+  text-align: center;
+
+  padding: 35px 20px;
+
+  background: var(--superficie);
+  color: var(--texto-secundario);
+
+  border: 1px dashed var(--borda);
+  border-radius: 12px;
+}
+
+/* ==========================================
+   RODAPÉ
+   ========================================== */
+
+footer {
+  margin-top: 65px;
+
+  padding: 30px 20px;
+
+  text-align: center;
+
+  color: var(--texto-secundario);
+
+  border-top: 1px solid var(--borda);
+
+  font-size: 13px;
+}
+
+footer p {
+  margin: 6px 0;
+}
+
+/* ==========================================
+   CELULARES E TABLETS
+   ========================================== */
+
+@media (max-width: 768px) {
+
+  .container {
+    padding: 0 14px;
+  }
+
+  .topo {
+    padding: 14px;
+  }
+
+  .logo {
+    font-size: 21px;
+  }
+
+  .topo button {
+    font-size: 12px;
+    padding: 9px 12px;
+  }
+
+  .apresentacao {
+    padding: 55px 20px;
+  }
+
+  .apresentacao p {
+    font-size: 15px;
+  }
+
+  .admin {
+    padding: 17px;
+  }
+
+  .painel {
+    padding: 15px;
+  }
+
+  .campos {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .campo.completo {
+    grid-column: auto;
+  }
+
+  .secao {
+    margin-top: 38px;
+    margin-bottom: 32px;
+  }
+
+  .barra-catalogo {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  #filtroCategoria {
+    width: 100%;
+  }
+
+  .grade-produtos {
+    gap: 16px;
+  }
+
+  .foto-produto,
+  .sem-foto {
+    height: 220px;
+  }
+}
+
+/* ==========================================
+   CELULARES PEQUENOS
+   ========================================== */
 
 @media (max-width: 480px) {
+
+  .container {
+    padding: 0 10px;
+  }
+
+  .topo {
+    justify-content: center;
+  }
+
+  .logo {
+    width: 100%;
+    text-align: center;
+    margin-right: 0;
+  }
+
+  .apresentacao {
+    padding: 38px 16px;
+  }
+
+  .apresentacao h1 {
+    font-size: 30px;
+  }
+
+  .lista-cores {
+    grid-template-columns: 1fr;
+  }
+
   .lista-cores .cor-item {
-    flex-wrap: wrap;
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .foto-filamento {
+    width: 64px;
+    height: 64px;
+    flex-basis: 64px;
+  }
+
+  .grade-produtos {
+    grid-template-columns: 1fr;
+  }
+
+  .info-produto {
+    padding: 16px;
+  }
+
+  .personalizacao {
+    grid-template-columns: minmax(0, 1fr) 95px;
+  }
+
+  .admin {
+    padding: 12px;
+  }
+
+  .btn-salvar {
+    width: 100%;
+  }
+
+  .cor-remover {
+    margin-left: 0;
+  }
+}
+
+/* ==========================================
+   ACESSIBILIDADE
+   ========================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }
