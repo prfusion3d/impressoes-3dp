@@ -844,3 +844,185 @@ if (document.readyState === "loading") {
 
   iniciarLoja();
 }
+
+/* ======================================
+   GERENCIAR E EXCLUIR ITENS
+====================================== */
+
+(function () {
+
+  function iniciarExclusao() {
+
+    const admin = document.querySelector(".admin");
+
+    if (!admin) return;
+
+    if (document.getElementById("painelExcluirItens")) {
+      return;
+    }
+
+    // CRIAR PAINEL
+    const painel = document.createElement("details");
+    painel.className = "painel";
+    painel.id = "painelExcluirItens";
+
+    const titulo = document.createElement("summary");
+    titulo.textContent =
+      "🗑️ Gerenciar e excluir itens cadastrados";
+
+    const conteudo = document.createElement("div");
+    conteudo.style.paddingTop = "15px";
+
+    painel.append(titulo, conteudo);
+    admin.appendChild(painel);
+
+    // TIPOS DE CADASTRO
+    const tipos = [
+      {
+        chave: "loja3d_modelos",
+        titulo: "Modelos 3D",
+        nome: item => item.nome || "Sem nome"
+      },
+      {
+        chave: "loja3d_filamentos",
+        titulo: "Filamentos",
+        nome: item =>
+          `${item.tipo || "Material"} - ${item.cor || "Cor"}`
+      }
+    ];
+
+    // CARREGAR CADASTROS
+    function carregar(chave) {
+      try {
+        const dados = JSON.parse(
+          localStorage.getItem(chave)
+        );
+
+        return Array.isArray(dados) ? dados : [];
+
+      } catch {
+        return [];
+      }
+    }
+
+    // MOSTRAR LISTAS
+    function mostrarItens() {
+
+      conteudo.replaceChildren();
+
+      tipos.forEach(tipo => {
+
+        const subtitulo = document.createElement("h3");
+        subtitulo.textContent = tipo.titulo;
+
+        conteudo.appendChild(subtitulo);
+
+        const itens = carregar(tipo.chave);
+
+        if (itens.length === 0) {
+          const vazio = document.createElement("p");
+          vazio.textContent = "Nenhum item cadastrado.";
+          conteudo.appendChild(vazio);
+        }
+
+        itens.forEach((item, indice) => {
+
+          const linha = document.createElement("div");
+
+          linha.style.cssText = `
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid var(--borda, #888);
+            border-radius: 8px;
+          `;
+
+          const nome = document.createElement("span");
+          nome.textContent = tipo.nome(item);
+
+          const botao = document.createElement("button");
+          botao.type = "button";
+          botao.textContent = "Excluir";
+
+          botao.style.cssText = `
+            background: #b91c1c;
+            color: white;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+          `;
+
+          botao.addEventListener("click", () => {
+
+            if (!confirm(
+              `Deseja excluir ${tipo.nome(item)}?`
+            )) {
+              return;
+            }
+
+            const atual = carregar(tipo.chave);
+
+            const posicao = item.id == null
+              ? indice
+              : atual.findIndex(
+                  x => String(x.id) === String(item.id)
+                );
+
+            if (
+              posicao < 0 ||
+              posicao >= atual.length
+            ) {
+              alert("Item não encontrado. Atualize a página.");
+              return;
+            }
+
+            atual.splice(posicao, 1);
+
+            try {
+              localStorage.setItem(
+                tipo.chave,
+                JSON.stringify(atual)
+              );
+
+              location.reload();
+
+            } catch {
+              alert("Erro ao excluir o item.");
+            }
+
+          });
+
+          linha.append(nome, botao);
+          conteudo.appendChild(linha);
+
+        });
+
+      });
+    }
+
+    painel.addEventListener("toggle", () => {
+      if (painel.open) mostrarItens();
+    });
+
+    mostrarItens();
+  }
+
+  if (document.readyState === "loading") {
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      iniciarExclusao
+    );
+
+  } else {
+
+    iniciarExclusao();
+
+  }
+
+})();
