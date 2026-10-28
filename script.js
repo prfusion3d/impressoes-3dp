@@ -1,9 +1,7 @@
 
-// =============================================
-// LOJA 3D - SUPABASE + WHATSAPP
-// =============================================
+// PRFUSION 3D — SUPABASE, WHATSAPP E ZOOM
 
-// CONFIGURAÇÕES JÁ PREENCHIDAS
+// CONFIGURAÇÕES
 
 const SUPABASE_URL =
   "https://ewcatvwkotqpjxvxtwki.supabase.co";
@@ -17,9 +15,9 @@ const ADMIN_UID =
 const WHATSAPP = "5544933007211";
 const BUCKET = "produtos";
 
-// =============================================
 // FUNÇÕES AUXILIARES
-// =============================================
+
+const $ = id => document.getElementById(id);
 
 function criar(tag, classe = "", texto = "") {
   const el = document.createElement(tag);
@@ -35,107 +33,123 @@ function moeda(valor) {
   });
 }
 
-function fotoValida(foto) {
-  if (!foto) return true;
+function fotoValida(valor) {
+  if (!valor) return true;
 
-  if (/^https?:\/\//i.test(foto)) {
+  if (/^https?:\/\//i.test(valor)) {
     try {
-      const url = new URL(foto);
-      return (
-        url.protocol === "http:" ||
-        url.protocol === "https:"
+      return ["https:", "http:"].includes(
+        new URL(valor).protocol
       );
     } catch {
       return false;
     }
   }
 
-  const local = foto.replace(/^\.\//, "");
+  const local = valor.replace(/^\.\//, "");
 
   return (
     local.startsWith("imagens/") &&
-    local.length > "imagens/".length &&
+    local.length > 8 &&
     !local.includes("..") &&
     !/[\\:?#]/.test(local)
   );
 }
 
-// =============================================
 // INICIAR LOJA
-// =============================================
 
 function iniciarLoja() {
-
   const admin = document.querySelector(".admin");
   const topo = document.querySelector(".topo");
 
-  const catalogo =
-    document.getElementById("catalogo");
+  const catalogo = $("catalogo");
+  const cores = $("listaFilamentos");
 
-  const listaCores =
-    document.getElementById("listaFilamentos");
+  const formModelo = $("formModelo");
+  const formFilamento = $("formFilamento");
 
-  const formModelo =
-    document.getElementById("formModelo");
-
-  const formFilamento =
-    document.getElementById("formFilamento");
-
-  const filtro =
-    document.getElementById("filtroCategoria");
-
-  const botaoTema =
-    document.getElementById("alternarTema");
-
-  const fotoTexto =
-    document.getElementById("fotoModelo");
+  const filtro = $("filtroCategoria");
 
   if (
-    !admin || !topo || !catalogo ||
-    !listaCores || !formModelo || !formFilamento
+    !admin ||
+    !topo ||
+    !catalogo ||
+    !cores ||
+    !formModelo ||
+    !formFilamento
   ) {
-    console.error(
-      "Confira os IDs do index.html."
-    );
+    console.error("Faltam elementos no index.html.");
     return;
   }
 
-  // =========================================
+  // NOTIFICAÇÕES
+
+  const aviso = criar("div");
+
+  aviso.style.cssText = `
+    position: fixed;
+    z-index: 10020;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 90vw;
+    background: #15803d;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 10px;
+    box-shadow: 0 8px 25px #0007;
+    display: none;
+  `;
+
+  aviso.setAttribute("role", "status");
+
+  document.body.append(aviso);
+
+  let avisoTimer;
+
+  function informar(msg, erro = false) {
+    aviso.textContent = msg;
+
+    aviso.style.background = erro
+      ? "#b91c1c"
+      : "#15803d";
+
+    aviso.style.display = "block";
+
+    clearTimeout(avisoTimer);
+
+    avisoTimer = setTimeout(() => {
+      aviso.style.display = "none";
+    }, 5500);
+
+    if (erro) console.error(msg);
+  }
+
+  // ========================================
   // MODO CLARO E ESCURO
-  // =========================================
+  // ========================================
 
   let tema = "escuro";
 
   try {
-    if (
+    tema =
       localStorage.getItem("loja3d_tema") === "claro"
-    ) {
-      tema = "claro";
-    }
-  } catch (erro) {
-    console.warn("Tema indisponível", erro);
-  }
+        ? "claro"
+        : "escuro";
+  } catch {}
 
   function aplicarTema() {
-
     document.documentElement.dataset.tema = tema;
 
-    if (botaoTema) {
-      botaoTema.textContent = tema === "claro"
+    $("alternarTema").textContent =
+      tema === "claro"
         ? "🌙 Modo escuro"
         : "☀️ Modo claro";
-
-      botaoTema.setAttribute(
-        "aria-pressed",
-        String(tema === "claro")
-      );
-    }
   }
 
   aplicarTema();
 
-  botaoTema?.addEventListener("click", () => {
-
+  $("alternarTema").addEventListener("click", () => {
     tema = tema === "claro" ? "escuro" : "claro";
 
     aplicarTema();
@@ -145,60 +159,414 @@ function iniciarLoja() {
     } catch {}
   });
 
-  // =========================================
-  // NOTIFICAÇÕES
-  // =========================================
+  // ========================================
+  // ZOOM DAS FOTOS
+  // ========================================
 
-  const aviso = criar("div");
+  function iniciarZoom() {
+    const fundo = criar("div", "zoom-overlay");
 
-  aviso.setAttribute("role", "status");
+    fundo.hidden = true;
 
-  aviso.style.cssText = `
-    position: fixed;
-    bottom: 18px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10001;
-    max-width: 90vw;
-    padding: 12px 18px;
-    border-radius: 10px;
-    color: white;
-    background: #15803d;
-    box-shadow: 0 8px 25px #0007;
-    display: none;
-  `;
+    fundo.setAttribute("role", "dialog");
+    fundo.setAttribute("aria-modal", "true");
 
-  document.body.appendChild(aviso);
+    fundo.setAttribute(
+      "aria-label",
+      "Imagem ampliada do produto"
+    );
 
-  let timerAviso;
+    fundo.innerHTML = `
+      <div class="zoom-caixa">
 
-  function informar(mensagem, erro = false) {
+        <div class="zoom-barra">
+          <strong class="zoom-titulo"></strong>
 
-    aviso.textContent = mensagem;
+          <div class="zoom-controles">
+            <button
+              type="button"
+              data-z="menos"
+              aria-label="Diminuir"
+            >−</button>
 
-    aviso.style.background = erro
-      ? "#b91c1c"
-      : "#15803d";
+            <button
+              type="button"
+              data-z="reset"
+              aria-label="Restaurar"
+            >100%</button>
 
-    aviso.style.display = "block";
+            <button
+              type="button"
+              data-z="mais"
+              aria-label="Ampliar"
+            >+</button>
 
-    clearTimeout(timerAviso);
+            <button
+              type="button"
+              data-z="fechar"
+              aria-label="Fechar"
+            >✕</button>
+          </div>
+        </div>
 
-    timerAviso = setTimeout(() => {
-      aviso.style.display = "none";
-    }, 6500);
+        <div class="zoom-palco">
+          <img
+            class="zoom-imagem"
+            alt=""
+            draggable="false"
+          >
+        </div>
 
-    if (erro) console.error(mensagem);
+        <p class="zoom-dica">
+          Arraste para mover • Use a roda do mouse
+          ou pinça no celular • Esc para fechar
+        </p>
+
+      </div>
+    `;
+
+    document.body.append(fundo);
+
+    const img = fundo.querySelector(
+      ".zoom-imagem"
+    );
+
+    const palco = fundo.querySelector(
+      ".zoom-palco"
+    );
+
+    const titulo = fundo.querySelector(
+      ".zoom-titulo"
+    );
+
+    const botao = acao =>
+      fundo.querySelector(`[data-z="${acao}"]`);
+
+    const ponteiros = new Map();
+
+    let escala = 1;
+    let x = 0;
+    let y = 0;
+
+    let inicial = 0;
+    let escalaInicial = 1;
+
+    let ultimoX = 0;
+    let ultimoY = 0;
+
+    let focoAnterior = null;
+
+    // ATUALIZAR POSIÇÃO E TAMANHO
+
+    function atualizar() {
+      const maxX =
+        img.clientWidth * (escala - 1) / 2;
+
+      const maxY =
+        img.clientHeight * (escala - 1) / 2;
+
+      x = Math.max(
+        -maxX,
+        Math.min(maxX, x)
+      );
+
+      y = Math.max(
+        -maxY,
+        Math.min(maxY, y)
+      );
+
+      img.style.transform =
+        `translate(${x}px, ${y}px) scale(${escala})`;
+
+      botao("reset").textContent =
+        `${Math.round(escala * 100)}%`;
+
+      palco.classList.toggle(
+        "ampliado",
+        escala > 1
+      );
+    }
+
+    function zoom(valor) {
+      escala = Math.max(
+        1,
+        Math.min(5, valor)
+      );
+
+      if (escala === 1) {
+        x = 0;
+        y = 0;
+      }
+
+      atualizar();
+    }
+
+    // ABRIR IMAGEM
+
+    function abrir(foto) {
+      focoAnterior = document.activeElement;
+
+      img.src = foto.currentSrc || foto.src;
+      img.alt = foto.alt;
+
+      titulo.textContent =
+        foto.alt || "Foto do produto";
+
+      fundo.hidden = false;
+
+      document.body.classList.add(
+        "zoom-ativo"
+      );
+
+      ponteiros.clear();
+
+      x = 0;
+      y = 0;
+
+      zoom(1);
+
+      botao("fechar").focus();
+    }
+
+    // FECHAR IMAGEM
+
+    function fechar() {
+      if (fundo.hidden) return;
+
+      fundo.hidden = true;
+
+      document.body.classList.remove(
+        "zoom-ativo"
+      );
+
+      ponteiros.clear();
+
+      img.removeAttribute("src");
+
+      if (focoAnterior?.isConnected) {
+        focoAnterior.focus();
+      }
+    }
+
+    // ABRIR AO CLICAR NAS FOTOS
+
+    catalogo.addEventListener("click", e => {
+      const foto = e.target.closest(
+        "img.foto-produto"
+      );
+
+      if (foto) abrir(foto);
+    });
+
+    // ABRIR PELO TECLADO
+
+    catalogo.addEventListener("keydown", e => {
+      if (
+        (e.key === "Enter" || e.key === " ") &&
+        e.target.matches("img.foto-produto")
+      ) {
+        e.preventDefault();
+
+        abrir(e.target);
+      }
+    });
+
+    // CONTROLES DO ZOOM
+
+    botao("fechar").addEventListener(
+      "click",
+      fechar
+    );
+
+    botao("mais").addEventListener(
+      "click",
+      () => zoom(escala * 1.3)
+    );
+
+    botao("menos").addEventListener(
+      "click",
+      () => zoom(escala / 1.3)
+    );
+
+    botao("reset").addEventListener(
+      "click",
+      () => zoom(1)
+    );
+
+    fundo.addEventListener("click", e => {
+      if (e.target === fundo) fechar();
+    });
+
+    // ATALHOS DO TECLADO
+
+    document.addEventListener("keydown", e => {
+      if (fundo.hidden) return;
+
+      if (e.key === "Escape") {
+        fechar();
+      } else if (
+        e.key === "+" ||
+        e.key === "="
+      ) {
+        zoom(escala * 1.3);
+      } else if (e.key === "-") {
+        zoom(escala / 1.3);
+      } else if (e.key === "0") {
+        zoom(1);
+      } else if (e.key === "Tab") {
+        const bs = [
+          ...fundo.querySelectorAll("button")
+        ];
+
+        const primeiro = bs[0];
+        const ultimo = bs[bs.length - 1];
+
+        if (
+          e.shiftKey &&
+          document.activeElement === primeiro
+        ) {
+          e.preventDefault();
+          ultimo.focus();
+        } else if (
+          !e.shiftKey &&
+          document.activeElement === ultimo
+        ) {
+          e.preventDefault();
+          primeiro.focus();
+        }
+      }
+    });
+
+    // ZOOM COM RODA DO MOUSE
+
+    palco.addEventListener(
+      "wheel",
+      e => {
+        e.preventDefault();
+
+        zoom(
+          escala *
+          (e.deltaY < 0 ? 1.15 : 1 / 1.15)
+        );
+      },
+      { passive: false }
+    );
+
+    // DOIS CLIQUES
+
+    palco.addEventListener("dblclick", () => {
+      zoom(escala > 1 ? 1 : 2);
+    });
+
+    // DISTÂNCIA ENTRE DOIS DEDOS
+
+    const distancia = arr =>
+      Math.hypot(
+        arr[0].x - arr[1].x,
+        arr[0].y - arr[1].y
+      );
+
+    // INÍCIO DO TOQUE
+
+    palco.addEventListener("pointerdown", e => {
+      if (
+        e.pointerType === "mouse" &&
+        (e.button !== 0 || escala === 1)
+      ) {
+        return;
+      }
+
+      ponteiros.set(e.pointerId, {
+        x: e.clientX,
+        y: e.clientY
+      });
+
+      palco.setPointerCapture(e.pointerId);
+
+      ultimoX = e.clientX;
+      ultimoY = e.clientY;
+
+      if (ponteiros.size === 2) {
+        inicial = distancia([
+          ...ponteiros.values()
+        ]);
+
+        escalaInicial = escala;
+      }
+    });
+
+    // ARRASTAR / PINÇA
+
+    palco.addEventListener("pointermove", e => {
+      if (!ponteiros.has(e.pointerId)) {
+        return;
+      }
+
+      ponteiros.set(e.pointerId, {
+        x: e.clientX,
+        y: e.clientY
+      });
+
+      if (
+        ponteiros.size === 2 &&
+        inicial > 0
+      ) {
+        zoom(
+          escalaInicial *
+          distancia([...ponteiros.values()]) /
+          inicial
+        );
+      } else if (
+        ponteiros.size === 1 &&
+        escala > 1
+      ) {
+        x += e.clientX - ultimoX;
+        y += e.clientY - ultimoY;
+
+        atualizar();
+      }
+
+      ultimoX = e.clientX;
+      ultimoY = e.clientY;
+    });
+
+    // TERMINAR TOQUE
+
+    function soltar(e) {
+      ponteiros.delete(e.pointerId);
+
+      if (ponteiros.size === 1) {
+        const p = [
+          ...ponteiros.values()
+        ][0];
+
+        ultimoX = p.x;
+        ultimoY = p.y;
+      }
+
+      if (ponteiros.size < 2) {
+        inicial = 0;
+      }
+    }
+
+    [
+      "pointerup",
+      "pointercancel",
+      "lostpointercapture"
+    ].forEach(ev => {
+      palco.addEventListener(ev, soltar);
+    });
   }
 
-  // =========================================
-  // CONECTAR AO SUPABASE
-  // =========================================
+  iniciarZoom();
+
+  // ========================================
+  // CONEXÃO SUPABASE
+  // ========================================
 
   if (!window.supabase?.createClient) {
-
     informar(
-      "Biblioteca Supabase não carregou. Confira o index.html.",
+      "Não foi possível carregar a biblioteca Supabase.",
       true
     );
 
@@ -212,35 +580,26 @@ function iniciarLoja() {
 
   let modelos = [];
   let filamentos = [];
+
   let administrador = false;
 
-  // =========================================
-  // BOTÃO DE ADMINISTRAÇÃO
-  // =========================================
+  // ========================================
+  // ADMINISTRAÇÃO
+  // ========================================
 
-  const botaoAdmin = criar(
+  const abrirAdmin = criar(
     "button",
-    "",
+    "botao-admin",
     "⚙️ Administração"
   );
 
-  botaoAdmin.type = "button";
+  abrirAdmin.type = "button";
 
-  botaoAdmin.style.cssText = `
-    padding: 10px 14px;
-    border-radius: 25px;
-    cursor: pointer;
-    background: var(--cartao);
-    color: var(--texto);
-    border: 1px solid var(--borda);
-  `;
-
-  topo.appendChild(botaoAdmin);
+  topo.append(abrirAdmin);
 
   admin.hidden = true;
 
-  botaoAdmin.addEventListener("click", () => {
-
+  abrirAdmin.addEventListener("click", () => {
     admin.hidden = !admin.hidden;
 
     if (!admin.hidden) {
@@ -250,266 +609,45 @@ function iniciarLoja() {
     }
   });
 
-  // =========================================
-  // PAINEL DE LOGIN
-  // =========================================
+  const login = criar("div", "painel");
 
-  const painelLogin = criar("div", "painel");
+  admin.prepend(login);
 
-  admin.prepend(painelLogin);
-
-  const paineisCadastro = [
+  const paineis = [
     ...admin.querySelectorAll("details")
   ];
 
-  // =========================================
-  // PAINEL DE EXCLUSÃO
-  // =========================================
+  const gerenciar = criar("details", "painel");
 
-  let painelExcluir = document.getElementById(
-    "painelExcluirItens"
+  gerenciar.append(
+    criar(
+      "summary",
+      "",
+      "🗑️ Gerenciar e excluir itens"
+    )
   );
-
-  if (!painelExcluir) {
-
-    painelExcluir = criar("details", "painel");
-
-    painelExcluir.id = "painelExcluirItens";
-
-    painelExcluir.appendChild(
-      criar(
-        "summary",
-        "",
-        "🗑️ Gerenciar e excluir itens"
-      )
-    );
-
-    admin.appendChild(painelExcluir);
-  }
 
   const listaGerenciar = criar("div");
 
-  listaGerenciar.style.paddingTop = "16px";
+  gerenciar.append(listaGerenciar);
 
-  painelExcluir.appendChild(listaGerenciar);
+  admin.append(gerenciar);
 
-  if (!paineisCadastro.includes(painelExcluir)) {
-    paineisCadastro.push(painelExcluir);
-  }
+  paineis.push(gerenciar);
 
-  // =========================================
-  // CAMPO PARA ESCOLHER FOTOS
-  // =========================================
+  // ========================================
+  // LOGIN ADMINISTRATIVO
+  // ========================================
 
-  const campoArquivo = criar("input");
+  function atualizarLogin() {
+    login.replaceChildren();
 
-  campoArquivo.type = "file";
-  campoArquivo.id = "fotoArquivo";
-
-  campoArquivo.accept =
-    "image/png,image/jpeg,image/webp";
-
-  if (fotoTexto?.parentElement) {
-
-    const rotulo = criar(
-      "label",
-      "",
-      "Ou escolha uma foto do computador:"
-    );
-
-    rotulo.htmlFor = "fotoArquivo";
-
-    fotoTexto.parentElement.append(
-      rotulo,
-      campoArquivo
-    );
-  }
-
-  // =========================================
-  // CONFIRMAÇÃO DE EXCLUSÃO
-  // =========================================
-
-  function confirmarExclusao(nome) {
-
-    return new Promise(resolve => {
-
-      const fundo = criar("div");
-
-      fundo.style.cssText = `
-        position: fixed;
-        inset: 0;
-        z-index: 10000;
-        background: #0009;
-        display: grid;
-        place-items: center;
-        padding: 20px;
-      `;
-
-      const caixa = criar("div");
-
-      caixa.setAttribute("role", "dialog");
-      caixa.setAttribute("aria-modal", "true");
-
-      caixa.setAttribute(
-        "aria-label",
-        "Confirmação de exclusão"
-      );
-
-      caixa.style.cssText = `
-        max-width: 420px;
-        width: 100%;
-        padding: 24px;
-        border-radius: 14px;
-        background: var(--cartao);
-        color: var(--texto);
-        border: 1px solid var(--borda);
-      `;
-
-      caixa.append(
-        criar("h3", "", "Excluir item?"),
-        criar(
-          "p",
-          "",
-          "Deseja realmente excluir “" + nome + "”?"
-        )
-      );
-
-      const botoes = criar("div");
-
-      botoes.style.cssText = `
-        display: flex;
-        gap: 10px;
-        justify-content: flex-end;
-        margin-top: 20px;
-      `;
-
-      const cancelar = criar(
-        "button",
-        "",
-        "Cancelar"
-      );
-
-      const excluir = criar(
-        "button",
-        "",
-        "Sim, excluir"
-      );
-
-      cancelar.type = "button";
-      excluir.type = "button";
-
-      cancelar.style.cssText = `
-        padding: 11px;
-        border: 0;
-        border-radius: 8px;
-        background: #64748b;
-        color: white;
-      `;
-
-      excluir.style.cssText = `
-        padding: 11px;
-        border: 0;
-        border-radius: 8px;
-        background: #b91c1c;
-        color: white;
-      `;
-
-      const anterior = document.activeElement;
-      let resolvido = false;
-
-      function finalizar(resposta) {
-
-        if (resolvido) return;
-
-        resolvido = true;
-
-        document.removeEventListener(
-          "keydown",
-          tecla
-        );
-
-        fundo.remove();
-
-        if (anterior?.isConnected) {
-          anterior.focus();
-        }
-
-        resolve(resposta);
-      }
-
-      function tecla(e) {
-
-        if (e.key === "Escape") {
-          finalizar(false);
-        }
-
-        if (e.key === "Tab") {
-
-          if (
-            e.shiftKey &&
-            document.activeElement === cancelar
-          ) {
-            e.preventDefault();
-            excluir.focus();
-
-          } else if (
-            !e.shiftKey &&
-            document.activeElement === excluir
-          ) {
-            e.preventDefault();
-            cancelar.focus();
-          }
-        }
-      }
-
-      cancelar.addEventListener(
-        "click",
-        () => finalizar(false)
-      );
-
-      excluir.addEventListener(
-        "click",
-        () => finalizar(true)
-      );
-
-      fundo.addEventListener("click", e => {
-
-        if (e.target === fundo) {
-          finalizar(false);
-        }
-      });
-
-      document.addEventListener(
-        "keydown",
-        tecla
-      );
-
-      botoes.append(cancelar, excluir);
-
-      caixa.appendChild(botoes);
-      fundo.appendChild(caixa);
-
-      document.body.appendChild(fundo);
-
-      cancelar.focus();
-    });
-  }
-
-  // =========================================
-  // LOGIN E LOGOUT
-  // =========================================
-
-  function mostrarLogin() {
-
-    painelLogin.replaceChildren();
-
-    paineisCadastro.forEach(p => {
+    paineis.forEach(p => {
       p.hidden = !administrador;
     });
 
     if (administrador) {
-
-      painelLogin.appendChild(
+      login.append(
         criar(
           "p",
           "",
@@ -526,73 +664,63 @@ function iniciarLoja() {
       sair.type = "button";
 
       sair.addEventListener("click", async () => {
-
         const { error } = await db.auth.signOut();
 
         if (error) {
           return informar(
-            "Erro ao sair: " + error.message,
+            error.message,
             true
           );
         }
 
         administrador = false;
 
-        mostrarLogin();
+        atualizarLogin();
         renderizar();
-
-        informar("Você saiu da conta.");
       });
 
-      painelLogin.appendChild(sair);
+      login.append(sair);
 
-      return;
-    }
+    } else {
+      login.append(
+        criar(
+          "h3",
+          "",
+          "Entrar como administrador"
+        )
+      );
 
-    painelLogin.appendChild(
-      criar(
-        "h3",
-        "",
-        "Entrar como administrador"
-      )
-    );
+      const form = criar("form");
 
-    const formulario = criar("form");
+      const email = criar("input");
+      const senha = criar("input");
 
-    const email = criar("input");
+      email.type = "email";
+      email.placeholder = "E-mail";
+      email.autocomplete = "username";
+      email.required = true;
 
-    email.type = "email";
-    email.placeholder = "Seu e-mail";
-    email.autocomplete = "username";
-    email.required = true;
+      senha.type = "password";
+      senha.placeholder = "Senha";
+      senha.autocomplete = "current-password";
+      senha.required = true;
 
-    const senha = criar("input");
+      const entrar = criar(
+        "button",
+        "btn-salvar",
+        "Entrar"
+      );
 
-    senha.type = "password";
-    senha.placeholder = "Sua senha";
-    senha.autocomplete = "current-password";
-    senha.required = true;
+      entrar.type = "submit";
 
-    const entrar = criar(
-      "button",
-      "btn-salvar",
-      "Entrar"
-    );
+      form.append(email, senha, entrar);
 
-    entrar.type = "submit";
-
-    formulario.append(email, senha, entrar);
-
-    formulario.addEventListener(
-      "submit",
-      async e => {
-
+      form.addEventListener("submit", async e => {
         e.preventDefault();
 
         entrar.disabled = true;
 
         try {
-
           const { data, error } =
             await db.auth.signInWithPassword({
               email: email.value.trim(),
@@ -602,7 +730,6 @@ function iniciarLoja() {
           if (error) throw error;
 
           if (data.user?.id !== ADMIN_UID) {
-
             await db.auth.signOut();
 
             throw new Error(
@@ -612,13 +739,12 @@ function iniciarLoja() {
 
           administrador = true;
 
-          mostrarLogin();
+          atualizarLogin();
           renderizar();
 
-          informar("Login realizado com sucesso!");
+          informar("Login realizado!");
 
         } catch (erro) {
-
           informar(
             "Erro no login: " + erro.message,
             true
@@ -627,53 +753,166 @@ function iniciarLoja() {
         } finally {
           entrar.disabled = false;
         }
-      }
-    );
+      });
 
-    painelLogin.appendChild(formulario);
+      login.append(form);
+    }
   }
 
-  // VERIFICAR SESSÃO SALVA
-
   async function verificarSessao() {
-
-    const { data, error } = await db.auth.getUser();
+    const { data, error } =
+      await db.auth.getUser();
 
     administrador =
       !error &&
       data?.user?.id === ADMIN_UID;
 
-    mostrarLogin();
+    atualizarLogin();
     renderizar();
   }
 
-  // =========================================
-  // EXCLUIR PRODUTOS DO SUPABASE
-  // =========================================
+  // ========================================
+  // CONFIRMAÇÃO DE EXCLUSÃO
+  // ========================================
 
-  async function excluirItem(tipo, item) {
+  function confirmar(nome) {
+    return new Promise(resolve => {
+      const fundo = criar("div");
 
-    if (!administrador) {
+      fundo.style.cssText = `
+        position: fixed;
+        inset: 0;
+        z-index: 10010;
+        background: #000a;
+        display: grid;
+        place-items: center;
+        padding: 18px;
+      `;
 
-      informar(
-        "Entre como administrador para excluir.",
-        true
+      const caixa = criar("div", "painel");
+
+      caixa.style.cssText = `
+        background: var(--cartao);
+        color: var(--texto);
+        width: min(420px, 100%);
+        padding: 24px;
+        border-radius: 12px;
+      `;
+
+      caixa.setAttribute("role", "dialog");
+      caixa.setAttribute("aria-modal", "true");
+
+      caixa.append(
+        criar("h3", "", "Excluir item?"),
+
+        criar(
+          "p",
+          "",
+          `Deseja excluir “${nome}”?`
+        )
       );
 
-      return;
+      const nao = criar(
+        "button",
+        "",
+        "Cancelar"
+      );
+
+      const sim = criar(
+        "button",
+        "",
+        "Excluir"
+      );
+
+      nao.type = "button";
+      sim.type = "button";
+
+      nao.style.cssText = `
+        padding: 11px;
+        background: #64748b;
+        color: white;
+        border: 0;
+        border-radius: 8px;
+        margin-right: 8px;
+      `;
+
+      sim.style.cssText = `
+        padding: 11px;
+        background: #b91c1c;
+        color: white;
+        border: 0;
+        border-radius: 8px;
+      `;
+
+      const anterior = document.activeElement;
+
+      function concluir(valor) {
+        document.removeEventListener(
+          "keydown",
+          teclado
+        );
+
+        fundo.remove();
+
+        if (anterior?.isConnected) {
+          anterior.focus();
+        }
+
+        resolve(valor);
+      }
+
+      function teclado(e) {
+        if (e.key === "Escape") {
+          concluir(false);
+        }
+      }
+
+      nao.onclick = () => concluir(false);
+      sim.onclick = () => concluir(true);
+
+      fundo.onclick = e => {
+        if (e.target === fundo) {
+          concluir(false);
+        }
+      };
+
+      caixa.append(nao, sim);
+      fundo.append(caixa);
+
+      document.body.append(fundo);
+
+      document.addEventListener(
+        "keydown",
+        teclado
+      );
+
+      nao.focus();
+    });
+  }
+
+  // ========================================
+  // EXCLUIR PRODUTOS
+  // ========================================
+
+  async function excluirItem(tipo, item) {
+    if (!administrador) {
+      return informar(
+        "Faça login como administrador.",
+        true
+      );
     }
 
-    const nome = tipo === "modelo"
-      ? item.nome
-      : item.tipo + " - " + item.cor;
+    const tabela =
+      tipo === "modelo"
+        ? "modelos"
+        : "filamentos";
 
-    if (!(await confirmarExclusao(nome))) {
-      return;
-    }
+    const nome =
+      tipo === "modelo"
+        ? item.nome
+        : `${item.tipo} - ${item.cor}`;
 
-    const tabela = tipo === "modelo"
-      ? "modelos"
-      : "filamentos";
+    if (!await confirmar(nome)) return;
 
     const { data, error } = await db
       .from(tabela)
@@ -682,60 +921,46 @@ function iniciarLoja() {
       .select("id");
 
     if (error) {
-
-      informar(
+      return informar(
         "Erro ao excluir: " + error.message,
         true
       );
-
-      return;
     }
 
     if (!data?.length) {
-
-      informar(
-        "Exclusão bloqueada. Confira as políticas RLS do Supabase.",
+      return informar(
+        "Exclusão bloqueada pelas políticas RLS.",
         true
       );
-
-      return;
     }
 
-    // REMOVER FOTO ENVIADA PELA LOJA
-
-    let erroFoto = false;
+    // TENTAR EXCLUIR FOTO DO STORAGE
 
     if (tipo === "modelo" && item.foto) {
-
       const prefixo =
-        SUPABASE_URL +
-        "/storage/v1/object/public/" +
-        BUCKET + "/";
+        `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/catalogo/`;
 
       if (item.foto.startsWith(prefixo)) {
-
-        const caminho = decodeURIComponent(
+        const nomeFoto = decodeURIComponent(
           item.foto
             .slice(prefixo.length)
             .split("?")[0]
         );
 
         if (
-          caminho.startsWith("catalogo/") &&
-          !caminho.includes("..")
+          nomeFoto &&
+          !nomeFoto.includes("..") &&
+          !nomeFoto.includes("/")
         ) {
+          const { error: erroFoto } =
+            await db.storage
+              .from(BUCKET)
+              .remove([`catalogo/${nomeFoto}`]);
 
-          const resposta = await db.storage
-            .from(BUCKET)
-            .remove([caminho]);
-
-          if (resposta.error) {
-
-            erroFoto = true;
-
+          if (erroFoto) {
             console.warn(
-              "Foto não excluída:",
-              resposta.error.message
+              "Não foi possível apagar a foto:",
+              erroFoto.message
             );
           }
         }
@@ -744,31 +969,23 @@ function iniciarLoja() {
 
     await carregarCatalogo();
 
-    informar(
-      erroFoto
-        ? "Item excluído, mas a foto ainda precisa ser removida do Storage."
-        : "Item excluído com sucesso!"
-    );
+    informar("Item excluído com sucesso!");
   }
 
-  // =========================================
-  // GERENCIAR E EXCLUIR ITENS
-  // =========================================
+  // ========================================
+  // GERENCIAR CADASTROS
+  // ========================================
 
   function mostrarGerenciamento() {
-
     listaGerenciar.replaceChildren();
 
     if (!administrador) return;
 
-    const grupos = [
+    for (const [tipo, lista] of [
       ["modelo", modelos],
       ["filamento", filamentos]
-    ];
-
-    for (const [tipo, itens] of grupos) {
-
-      listaGerenciar.appendChild(
+    ]) {
+      listaGerenciar.append(
         criar(
           "h3",
           "",
@@ -778,9 +995,8 @@ function iniciarLoja() {
         )
       );
 
-      if (!itens.length) {
-
-        listaGerenciar.appendChild(
+      if (!lista.length) {
+        listaGerenciar.append(
           criar(
             "p",
             "",
@@ -789,8 +1005,7 @@ function iniciarLoja() {
         );
       }
 
-      itens.forEach(item => {
-
+      lista.forEach(item => {
         const linha = criar("div");
 
         linha.style.cssText = `
@@ -799,87 +1014,80 @@ function iniciarLoja() {
           justify-content: space-between;
           gap: 12px;
           padding: 10px;
-          margin: 8px 0;
-          border-radius: 9px;
           border: 1px solid var(--borda);
+          border-radius: 9px;
+          margin: 8px 0;
         `;
 
-        const nome = criar(
-          "span",
-          "",
-          tipo === "modelo"
-            ? item.nome
-            : item.tipo + " - " + item.cor
+        linha.append(
+          criar(
+            "span",
+            "",
+            tipo === "modelo"
+              ? item.nome
+              : `${item.tipo} - ${item.cor}`
+          )
         );
 
-        nome.style.overflowWrap = "anywhere";
-
-        const botao = criar(
+        const excluir = criar(
           "button",
           "",
           "🗑️ Excluir"
         );
 
-        botao.type = "button";
+        excluir.type = "button";
 
-        botao.style.cssText = `
-          padding: 10px;
+        excluir.style.cssText = `
+          background: #b91c1c;
+          color: white;
           border: 0;
           border-radius: 8px;
-          color: white;
-          background: #b91c1c;
-          cursor: pointer;
+          padding: 10px;
         `;
 
-        botao.addEventListener("click", () => {
+        excluir.onclick = () =>
           excluirItem(tipo, item);
-        });
 
-        linha.append(nome, botao);
+        linha.append(excluir);
 
-        listaGerenciar.appendChild(linha);
+        listaGerenciar.append(linha);
       });
     }
   }
 
-  // =========================================
+  // ========================================
   // MOSTRAR FILAMENTOS
-  // =========================================
+  // ========================================
 
   function mostrarFilamentos() {
-
-    listaCores.replaceChildren();
+    cores.replaceChildren();
 
     if (!filamentos.length) {
-
-      listaCores.appendChild(
+      return cores.append(
         criar(
           "p",
           "mensagem-vazia",
           "Nenhum filamento cadastrado."
         )
       );
-
-      return;
     }
 
     filamentos.forEach(f => {
-
       const linha = criar(
         "div",
         "cor-item"
       );
 
       const bolinha = criar(
-        "div",
+        "span",
         "cor-bolinha"
       );
 
       bolinha.style.backgroundColor = f.hex;
 
       const nome =
-        f.tipo + " - " + f.cor +
-        (f.marca ? " (" + f.marca + ")" : "");
+        `${f.tipo} - ${f.cor}` +
+        (f.marca ? ` (${f.marca})` : "");
 
       linha.append(
         bolinha,
@@ -887,7 +1095,6 @@ function iniciarLoja() {
       );
 
       if (administrador) {
-
         const excluir = criar(
           "button",
           "cor-remover",
@@ -898,67 +1105,60 @@ function iniciarLoja() {
 
         excluir.setAttribute(
           "aria-label",
-          "Excluir " + nome
+          "Excluir " + f.cor
         );
 
-        excluir.addEventListener("click", () => {
+        excluir.onclick = () =>
           excluirItem("filamento", f);
-        });
 
-        linha.appendChild(excluir);
+        linha.append(excluir);
       }
 
-      listaCores.appendChild(linha);
+      cores.append(linha);
     });
   }
 
-  // =========================================
+  // ========================================
   // MOSTRAR MODELOS 3D
-  // =========================================
+  // ========================================
 
   function mostrarModelos() {
-
     catalogo.replaceChildren();
 
-    const categoria = filtro?.value || "Todos";
+    const categoria = filtro.value;
 
-    const visiveis = modelos.filter(m => {
-      return (
+    const visiveis = modelos.filter(
+      m =>
         categoria === "Todos" ||
         m.categoria === categoria
-      );
-    });
+    );
 
     if (!visiveis.length) {
-
-      catalogo.appendChild(
+      return catalogo.append(
         criar(
           "p",
           "mensagem-vazia",
           "Nenhum modelo encontrado."
         )
       );
-
-      return;
     }
 
     visiveis.forEach(m => {
-
       const card = criar(
         "article",
         "card"
       );
 
-      // FOTO DO MODELO
+      // FOTO COM ZOOM
 
-      const semFoto = () => criar(
-        "div",
-        "foto-produto sem-foto",
-        "3D"
-      );
+      const semFoto = () =>
+        criar(
+          "div",
+          "foto-produto sem-foto",
+          "3D"
+        );
 
       if (m.foto && fotoValida(m.foto)) {
-
         const img = criar(
           "img",
           "foto-produto"
@@ -968,18 +1168,29 @@ function iniciarLoja() {
         img.alt = m.nome;
         img.loading = "lazy";
 
-        img.onerror = () => {
+        img.tabIndex = 0;
+
+        img.setAttribute(
+          "role",
+          "button"
+        );
+
+        img.setAttribute(
+          "aria-label",
+          "Ampliar foto de " + m.nome
+        );
+
+        img.title = "Clique para ampliar";
+
+        img.onerror = () =>
           img.replaceWith(semFoto());
-        };
 
-        card.appendChild(img);
-
+        card.append(img);
       } else {
-
-        card.appendChild(semFoto());
+        card.append(semFoto());
       }
 
-      // INFORMAÇÕES
+      // INFORMAÇÕES DO PRODUTO
 
       const info = criar(
         "div",
@@ -987,14 +1198,11 @@ function iniciarLoja() {
       );
 
       info.append(
-        criar(
-          "span",
-          "tag",
-          m.categoria || "Outros"
-        ),
+        criar("span", "tag", m.categoria),
+        criar("h3", "", m.nome)
+      );
 
-        criar("h3", "", m.nome),
-
+      info.append(
         criar(
           "p",
           "descricao",
@@ -1008,7 +1216,7 @@ function iniciarLoja() {
         m.preco !== undefined &&
         m.preco !== "";
 
-      info.appendChild(
+      info.append(
         criar(
           "div",
           "preco",
@@ -1025,16 +1233,15 @@ function iniciarLoja() {
         "personalizacao"
       );
 
-      const rotuloCor = criar(
+      const lCor = criar(
         "label",
         "",
         "Cor e material:"
       );
 
-      const seletor = criar("select");
+      const sel = criar("select");
 
       if (!filamentos.length) {
-
         const opt = criar(
           "option",
           "",
@@ -1043,50 +1250,49 @@ function iniciarLoja() {
 
         opt.value = "";
 
-        seletor.appendChild(opt);
-
+        sel.append(opt);
       } else {
-
         filamentos.forEach(f => {
-
           const opt = criar(
             "option",
             "",
-            f.tipo + " - " + f.cor
+            `${f.tipo} - ${f.cor}`
           );
 
           opt.value = f.id;
 
-          seletor.appendChild(opt);
+          sel.append(opt);
         });
       }
 
-      rotuloCor.appendChild(seletor);
+      lCor.append(sel);
 
-      const rotuloQtd = criar(
+      const lQtd = criar(
         "label",
         "",
         "Quantidade:"
       );
 
-      const quantidade = criar("input");
+      const qtd = criar("input");
 
-      quantidade.type = "number";
-      quantidade.min = "1";
-      quantidade.max = "999";
-      quantidade.step = "1";
-      quantidade.value = "1";
+      qtd.type = "number";
+      qtd.min = "1";
+      qtd.max = "999";
+      qtd.step = "1";
+      qtd.value = "1";
 
-      rotuloQtd.appendChild(quantidade);
+      lQtd.append(qtd);
 
       personalizacao.append(
-        rotuloCor,
-        rotuloQtd
+        lCor,
+        lQtd
       );
 
-      info.appendChild(personalizacao);
+      info.append(personalizacao);
 
-      // PEDIDO VIA WHATSAPP
+      // ====================================
+      // PEDIDO PELO WHATSAPP
+      // ====================================
 
       const pedir = criar(
         "a",
@@ -1097,80 +1303,72 @@ function iniciarLoja() {
       pedir.target = "_blank";
       pedir.rel = "noopener noreferrer";
 
-      function atualizarPedido() {
-
+      function atualizarWhatsApp() {
         const f = filamentos.find(
-          x => String(x.id) === seletor.value
+          x => String(x.id) === sel.value
         );
 
-        const qtd = Math.max(
+        const quantidade = Math.max(
           1,
           Math.min(
             999,
             Math.floor(
-              Number(quantidade.value) || 1
+              Number(qtd.value) || 1
             )
           )
         );
 
-        const material = f
-          ? f.tipo + " - " + f.cor
-          : "A combinar";
-
-        let mensagem =
+        let msg =
           "Olá! Gostaria de encomendar uma impressão 3D.\n\n" +
 
-          "Modelo: " + m.nome + "\n" +
+          `Modelo: ${m.nome}\n` +
 
-          "Categoria: " + m.categoria + "\n" +
+          `Categoria: ${m.categoria}\n` +
 
-          "Cor e material: " + material + "\n" +
+          `Cor e material: ${
+            f
+              ? `${f.tipo} - ${f.cor}`
+              : "A combinar"
+          }\n` +
 
-          "Quantidade: " + qtd + "\n";
+          `Quantidade: ${quantidade}\n`;
 
         if (temPreco) {
+          msg +=
+            `Preço unitário: ${moeda(m.preco)}\n` +
 
-          mensagem +=
-            "Preço unitário: " +
-            moeda(m.preco) + "\n" +
-
-            "Total estimado: " +
-            moeda(Number(m.preco) * qtd) + "\n";
+            `Total estimado: ${
+              moeda(
+                Number(m.preco) * quantidade
+              )
+            }\n`;
         }
 
-        mensagem +=
+        msg +=
           "\nGostaria de confirmar a disponibilidade e o valor final!";
 
         pedir.href =
-          "https://wa.me/" +
-          WHATSAPP +
-          "?text=" +
-          encodeURIComponent(mensagem);
+          `https://wa.me/${WHATSAPP}?text=` +
+          encodeURIComponent(msg);
       }
 
-      seletor.addEventListener(
+      sel.addEventListener(
         "change",
-        atualizarPedido
+        atualizarWhatsApp
       );
 
-      quantidade.addEventListener(
+      qtd.addEventListener(
         "input",
-        atualizarPedido
+        atualizarWhatsApp
       );
 
-      pedir.addEventListener(
-        "click",
-        atualizarPedido
-      );
+      atualizarWhatsApp();
 
-      atualizarPedido();
+      info.append(pedir);
 
-      info.appendChild(pedir);
-
-      // EXCLUIR MODELO
+      // BOTÃO DE EXCLUIR
 
       if (administrador) {
-
         const excluir = criar(
           "button",
           "btn-remover",
@@ -1179,43 +1377,37 @@ function iniciarLoja() {
 
         excluir.type = "button";
 
-        excluir.addEventListener("click", () => {
+        excluir.onclick = () =>
           excluirItem("modelo", m);
-        });
 
-        info.appendChild(excluir);
+        info.append(excluir);
       }
 
-      card.appendChild(info);
+      card.append(info);
 
-      catalogo.appendChild(card);
+      catalogo.append(card);
     });
   }
 
-  // =========================================
-  // ATUALIZAR CATÁLOGO
-  // =========================================
+  // ========================================
+  // ATUALIZAR INTERFACE
+  // ========================================
 
   function renderizar() {
-
     mostrarFilamentos();
-
     mostrarModelos();
-
     mostrarGerenciamento();
   }
 
-  // =========================================
-  // CARREGAR DADOS DO SUPABASE
-  // =========================================
+  // ========================================
+  // BUSCAR DADOS DO SUPABASE
+  // ========================================
 
   async function carregarCatalogo() {
-
     const [
-      resultadoModelos,
-      resultadoFilamentos
+      resModelos,
+      resFilamentos
     ] = await Promise.all([
-
       db.from("modelos")
         .select("*")
         .order("criado_em", {
@@ -1227,44 +1419,36 @@ function iniciarLoja() {
         .order("criado_em", {
           ascending: false
         })
-
     ]);
 
-    if (resultadoModelos.error) {
-
+    if (resModelos.error) {
       informar(
         "Erro ao carregar modelos: " +
-        resultadoModelos.error.message,
+        resModelos.error.message,
         true
       );
-
     } else {
-
-      modelos = resultadoModelos.data || [];
+      modelos = resModelos.data || [];
     }
 
-    if (resultadoFilamentos.error) {
-
+    if (resFilamentos.error) {
       informar(
         "Erro ao carregar filamentos: " +
-        resultadoFilamentos.error.message,
+        resFilamentos.error.message,
         true
       );
-
     } else {
-
-      filamentos = resultadoFilamentos.data || [];
+      filamentos = resFilamentos.data || [];
     }
 
     renderizar();
   }
 
-  // =========================================
-  // ENVIAR FOTO PARA SUPABASE STORAGE
-  // =========================================
+  // ========================================
+  // UPLOAD DE IMAGENS
+  // ========================================
 
   async function enviarFoto(arquivo) {
-
     const extensoes = {
       "image/png": "png",
       "image/jpeg": "jpg",
@@ -1272,33 +1456,25 @@ function iniciarLoja() {
     };
 
     if (!extensoes[arquivo.type]) {
-
       throw new Error(
         "Use uma imagem PNG, JPG ou WebP."
       );
     }
 
     if (arquivo.size > 5 * 1024 * 1024) {
-
       throw new Error(
-        "A imagem deve ter no máximo 5 MB."
+        "A foto deve ter até 5 MB."
       );
     }
 
-    const id =
-      typeof crypto !== "undefined" &&
-      crypto.randomUUID
-
-        ? crypto.randomUUID()
-
-        : Date.now() + "-" +
-          Math.random().toString(36).slice(2);
+    const id = crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${
+          Math.random().toString(36).slice(2)
+        }`;
 
     const caminho =
-      "catalogo/" +
-      id +
-      "." +
-      extensoes[arquivo.type];
+      `catalogo/${id}.${extensoes[arquivo.type]}`;
 
     const { error } = await db.storage
       .from(BUCKET)
@@ -1315,76 +1491,56 @@ function iniciarLoja() {
 
     return {
       foto: data.publicUrl,
-      caminho: caminho
+      caminho
     };
   }
 
-  // =========================================
-  // CADASTRAR MODELO 3D
-  // =========================================
+  // ========================================
+  // CADASTRAR MODELO
+  // ========================================
 
   formModelo.addEventListener(
     "submit",
     async e => {
-
       e.preventDefault();
 
       if (!administrador) {
-
         return informar(
           "Faça login para cadastrar.",
           true
         );
       }
 
-      const nome = document.getElementById(
-        "nomeModelo"
-      ).value.trim();
+      const nome = $("nomeModelo").value.trim();
+      const categoria = $("categoriaModelo").value;
 
-      const categoria = document.getElementById(
-        "categoriaModelo"
-      ).value;
+      const descricao =
+        $("descricaoModelo").value.trim();
 
-      const descricao = document.getElementById(
-        "descricaoModelo"
-      ).value.trim();
+      const textoPreco =
+        $("precoModelo").value;
 
-      const textoPreco = document.getElementById(
-        "precoModelo"
-      ).value;
+      const preco =
+        textoPreco === ""
+          ? null
+          : Number(textoPreco);
 
       const fotoDigitada =
-        (fotoTexto?.value || "").trim();
+        $("fotoModelo").value.trim();
 
-      const arquivo = campoArquivo.files?.[0];
-
-      const preco = textoPreco === ""
-        ? null
-        : Number(textoPreco);
-
-      if (!nome) {
-
-        return informar(
-          "Digite o nome do modelo.",
-          true
-        );
-      }
-
-      if (!fotoValida(fotoDigitada)) {
-
-        return informar(
-          "Endereço da foto inválido.",
-          true
-        );
-      }
+      const arquivo =
+        $("fotoArquivo").files[0];
 
       if (
-        preco !== null &&
-        (!Number.isFinite(preco) || preco < 0)
+        !nome ||
+        !fotoValida(fotoDigitada) ||
+        (
+          preco !== null &&
+          (!Number.isFinite(preco) || preco < 0)
+        )
       ) {
-
         return informar(
-          "Digite um preço válido.",
+          "Confira nome, preço e link da foto.",
           true
         );
       }
@@ -1393,23 +1549,20 @@ function iniciarLoja() {
         '[type="submit"]'
       );
 
-      if (botao) botao.disabled = true;
+      botao.disabled = true;
 
       let caminhoNovo = null;
 
       try {
-
         let foto = fotoDigitada || null;
 
         if (arquivo) {
-
-          const resultado = await enviarFoto(
+          const enviado = await enviarFoto(
             arquivo
           );
 
-          foto = resultado.foto;
-
-          caminhoNovo = resultado.caminho;
+          foto = enviado.foto;
+          caminhoNovo = enviado.caminho;
         }
 
         const { error } = await db
@@ -1426,9 +1579,7 @@ function iniciarLoja() {
 
         formModelo.reset();
 
-        if (filtro) {
-          filtro.value = "Todos";
-        }
+        filtro.value = "Todos";
 
         await carregarCatalogo();
 
@@ -1437,20 +1588,10 @@ function iniciarLoja() {
         );
 
       } catch (erro) {
-
         if (caminhoNovo) {
-
-          const limpeza = await db.storage
+          await db.storage
             .from(BUCKET)
             .remove([caminhoNovo]);
-
-          if (limpeza.error) {
-
-            console.warn(
-              "Foto não removida:",
-              limpeza.error.message
-            );
-          }
         }
 
         informar(
@@ -1460,48 +1601,40 @@ function iniciarLoja() {
         );
 
       } finally {
-
-        if (botao) botao.disabled = false;
+        botao.disabled = false;
       }
     }
   );
 
-  // =========================================
+  // ========================================
   // CADASTRAR FILAMENTO
-  // =========================================
+  // ========================================
 
   formFilamento.addEventListener(
     "submit",
     async e => {
-
       e.preventDefault();
 
       if (!administrador) {
-
         return informar(
           "Faça login para cadastrar.",
           true
         );
       }
 
-      const cor = document.getElementById(
-        "nomeCor"
-      ).value.trim();
+      const cor =
+        $("nomeCor").value.trim();
 
-      const tipo = document.getElementById(
-        "tipoFilamento"
-      ).value;
+      const tipo =
+        $("tipoFilamento").value;
 
-      const marca = document.getElementById(
-        "marcaFilamento"
-      ).value.trim();
+      const marca =
+        $("marcaFilamento").value.trim();
 
-      const hex = document.getElementById(
-        "corFilamento"
-      ).value;
+      const hex =
+        $("corFilamento").value;
 
       if (!cor) {
-
         return informar(
           "Digite a cor do filamento.",
           true
@@ -1512,10 +1645,9 @@ function iniciarLoja() {
         '[type="submit"]'
       );
 
-      if (botao) botao.disabled = true;
+      botao.disabled = true;
 
       try {
-
         const { error } = await db
           .from("filamentos")
           .insert({
@@ -1536,7 +1668,6 @@ function iniciarLoja() {
         );
 
       } catch (erro) {
-
         informar(
           "Erro ao cadastrar filamento: " +
           erro.message,
@@ -1544,30 +1675,24 @@ function iniciarLoja() {
         );
 
       } finally {
-
-        if (botao) botao.disabled = false;
+        botao.disabled = false;
       }
     }
   );
 
-  // =========================================
-  // FILTRAR CATEGORIAS
-  // =========================================
+  // ========================================
+  // FILTRO E INICIALIZAÇÃO
+  // ========================================
 
-  filtro?.addEventListener(
+  filtro.addEventListener(
     "change",
     mostrarModelos
   );
-
-  // =========================================
-  // INICIAR BANCO E LOGIN
-  // =========================================
 
   Promise.all([
     carregarCatalogo(),
     verificarSessao()
   ]).catch(erro => {
-
     informar(
       "Erro ao iniciar a loja: " +
       erro.message,
@@ -1576,19 +1701,14 @@ function iniciarLoja() {
   });
 }
 
-// =============================================
-// AGUARDAR CARREGAMENTO DO HTML
-// =============================================
+// INICIAR DEPOIS DO HTML CARREGAR
 
 if (document.readyState === "loading") {
-
   document.addEventListener(
     "DOMContentLoaded",
     iniciarLoja,
     { once: true }
   );
-
 } else {
-
   iniciarLoja();
 }

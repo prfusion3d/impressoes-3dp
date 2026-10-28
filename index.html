@@ -1,134 +1,78 @@
 
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-
-  <!-- CONFIGURAÇÕES DO SITE -->
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <meta
     name="description"
-    content="Loja de impressão 3D personalizada. Escolha modelos, cores e materiais e faça seu pedido pelo WhatsApp."
+    content="Prfusion 3D: modelos impressos em 3D sob encomenda."
   >
 
-  <title>Prfusion_3d</title>
+  <title>Prfusion 3D</title>
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=11">
 
-  <!-- BIBLIOTECA DO SUPABASE -->
+  <!-- Supabase -->
   <script
     src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
     defer>
   </script>
 
-  <!-- JAVASCRIPT DA LOJA -->
-  <script src="script.js?v=8" defer></script>
-
+  <!-- JavaScript da loja -->
+  <script src="script.js?v=11" defer></script>
 </head>
 
 <body>
-
   <div class="container">
 
-    <!-- ===================================
-         CABEÇALHO
-    ==================================== -->
-
     <header>
-
       <div class="topo">
+        <div class="logo">PRFUSION 3D</div>
 
-        <div class="logo">
-          3D STORE
-        </div>
-
-        <!-- BOTÃO CLARO / ESCURO -->
-        <button
-          id="alternarTema"
-          type="button"
-          aria-pressed="false"
-        >
+        <button id="alternarTema" type="button">
           ☀️ Modo claro
         </button>
-
-        <!-- O JAVASCRIPT ADICIONA AQUI
-             O BOTÃO DE ADMINISTRAÇÃO -->
-
       </div>
 
-      <!-- APRESENTAÇÃO -->
-
       <div class="apresentacao">
-
         <span class="destaque">
           IMPRESSÃO 3D PERSONALIZADA
         </span>
 
-        <h1>
-          Prfusion_3d
-        </h1>
+        <h1>Prfusion 3D</h1>
 
         <p>
           Transformando ideias em realidade!
-
           Conheça nossos modelos impressos em 3D,
-          escolha suas cores favoritas e faça
-          seu pedido diretamente pelo WhatsApp.
+          escolha cores e materiais e faça seu pedido
+          pelo WhatsApp.
         </p>
-
       </div>
-
     </header>
-
-    <!-- ===================================
-         CONTEÚDO PRINCIPAL
-    ==================================== -->
 
     <main>
 
-      <!-- =================================
-           ÁREA ADMINISTRATIVA
-      ================================== -->
+      <!-- PAINEL ADMINISTRATIVO -->
 
       <section class="admin" hidden>
-
-        <h2>
-          ⚙️ Gerenciar catálogo
-        </h2>
+        <h2>⚙️ Gerenciar catálogo</h2>
 
         <p class="subtexto">
-          Adicione, gerencie e exclua os modelos
-          e filamentos disponíveis na loja.
+          Cadastre e exclua modelos e filamentos
+          disponíveis na loja.
         </p>
 
-        <!-- O JAVASCRIPT ADICIONARÁ
-             O FORMULÁRIO DE LOGIN AQUI -->
-
-        <!-- ===============================
-             CADASTRAR MODELO 3D
-        ================================ -->
+        <!-- CADASTRAR MODELO -->
 
         <details class="painel">
-
-          <summary>
-            + Adicionar modelo 3D
-          </summary>
+          <summary>+ Adicionar modelo 3D</summary>
 
           <form id="formModelo">
-
             <div class="campos">
 
-              <!-- NOME -->
-
               <div class="campo">
-
                 <label for="nomeModelo">
                   Nome do modelo
                 </label>
@@ -136,81 +80,44 @@
                 <input
                   id="nomeModelo"
                   type="text"
-                  placeholder="Ex: Dragão articulado"
+                  placeholder="Ex.: Dragão articulado"
                   maxlength="80"
                   required
                 >
-
               </div>
-
-              <!-- CATEGORIA -->
 
               <div class="campo">
-
                 <label for="categoriaModelo">
-                  Categoria do produto
+                  Categoria
                 </label>
 
-                <select
-                  id="categoriaModelo"
-                  required
-                >
-
-                  <option value="Decoração">
-                    Decoração
-                  </option>
-
-                  <option value="Chaveiros">
-                    Chaveiros
-                  </option>
-
-                  <option value="Articulados">
-                    Articulados
-                  </option>
-
-                  <option value="Miniaturas">
-                    Miniaturas
-                  </option>
-
-                  <option value="Utilitários">
-                    Utilitários
-                  </option>
-
-                  <option value="Personalizados">
-                    Personalizados
-                  </option>
-
-                  <option value="Outros">
-                    Outros
-                  </option>
-
+                <select id="categoriaModelo" required>
+                  <option>Decoração</option>
+                  <option>Chaveiros</option>
+                  <option>Articulados</option>
+                  <option>Miniaturas</option>
+                  <option>Utilitários</option>
+                  <option>Personalizados</option>
+                  <option>Outros</option>
                 </select>
-
               </div>
 
-              <!-- DESCRIÇÃO -->
-
               <div class="campo completo">
-
                 <label for="descricaoModelo">
-                  Descrição do modelo
+                  Descrição
                 </label>
 
                 <textarea
                   id="descricaoModelo"
                   rows="4"
                   maxlength="1000"
-                  placeholder="Descreva seu produto, características, tamanho e outras informações..."
+                  placeholder="Descreva o modelo..."
                 ></textarea>
-
               </div>
 
-              <!-- PREÇO -->
-
               <div class="campo">
-
                 <label for="precoModelo">
-                  Preço do produto (R$)
+                  Preço (R$)
                 </label>
 
                 <input
@@ -218,17 +125,13 @@
                   type="number"
                   min="0"
                   step="0.01"
-                  placeholder="Ex: 35.00"
+                  placeholder="35.00"
                 >
-
               </div>
 
-              <!-- FOTO DO PRODUTO -->
-
               <div class="campo completo">
-
                 <label for="fotoModelo">
-                  Link da foto do produto
+                  Link da foto (opcional)
                 </label>
 
                 <input
@@ -237,121 +140,76 @@
                   placeholder="https://... ou imagens/dragao.png"
                 >
 
-                <small class="ajuda">
+                <label for="fotoArquivo">
+                  Ou escolha uma foto do computador (até 5 MB)
+                </label>
 
-                  Você pode utilizar o link público
-                  de uma foto do Supabase Storage
-                  ou uma imagem da pasta do site.
-
-                  Também será possível selecionar
-                  uma foto do computador usando
-                  o campo criado pelo JavaScript.
-
-                </small>
-
+                <input
+                  id="fotoArquivo"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                >
               </div>
 
             </div>
 
-            <!-- SALVAR MODELO -->
-
-            <button
-              type="submit"
-              class="btn-salvar"
-            >
-
+            <button class="btn-salvar" type="submit">
               Salvar modelo 3D
-
             </button>
-
           </form>
-
         </details>
 
-        <!-- ===============================
-             CADASTRAR FILAMENTO
-        ================================ -->
+        <!-- CADASTRAR FILAMENTO -->
 
         <details class="painel">
-
-          <summary>
-            + Adicionar filamento disponível
-          </summary>
+          <summary>+ Adicionar filamento disponível</summary>
 
           <form id="formFilamento">
-
             <div class="campos">
 
-              <!-- NOME DA COR -->
-
               <div class="campo">
-
-                <label for="nomeCor">
-                  Nome da cor
-                </label>
+                <label for="nomeCor">Nome da cor</label>
 
                 <input
                   id="nomeCor"
                   type="text"
-                  placeholder="Ex: Azul"
                   maxlength="50"
+                  placeholder="Ex.: Azul"
                   required
                 >
-
               </div>
 
-              <!-- MATERIAL -->
-
               <div class="campo">
-
                 <label for="tipoFilamento">
-                  Tipo de filamento
+                  Material
                 </label>
 
-                <select
-                  id="tipoFilamento"
-                  required
-                >
-
-                  <option value="PLA">PLA</option>
-
-                  <option value="PETG">PETG</option>
-
-                  <option value="ABS">ABS</option>
-
-                  <option value="TPU">TPU</option>
-
-                  <option value="ASA">ASA</option>
-
-                  <option value="Outro">Outro</option>
-
+                <select id="tipoFilamento" required>
+                  <option>PLA</option>
+                  <option>PETG</option>
+                  <option>ABS</option>
+                  <option>TPU</option>
+                  <option>ASA</option>
+                  <option>Outro</option>
                 </select>
-
               </div>
 
-              <!-- MARCA -->
-
               <div class="campo">
-
                 <label for="marcaFilamento">
-                  Marca do filamento
+                  Marca (opcional)
                 </label>
 
                 <input
                   id="marcaFilamento"
                   type="text"
-                  placeholder="Ex: Voolt3D"
                   maxlength="60"
+                  placeholder="Ex.: Voolt3D"
                 >
-
               </div>
 
-              <!-- COR VISUAL -->
-
               <div class="campo">
-
                 <label for="corFilamento">
-                  Escolha a cor
+                  Cor visual
                 </label>
 
                 <input
@@ -359,162 +217,77 @@
                   type="color"
                   value="#2563eb"
                 >
-
               </div>
 
             </div>
 
-            <!-- SALVAR FILAMENTO -->
-
-            <button
-              type="submit"
-              class="btn-salvar"
-            >
-
+            <button class="btn-salvar" type="submit">
               Salvar filamento
-
             </button>
-
           </form>
-
         </details>
-
-        <!-- O JAVASCRIPT ADICIONARÁ AQUI
-             A ÁREA DE EXCLUSÃO -->
-
       </section>
 
-      <!-- =================================
-           CORES E MATERIAIS
-      ================================== -->
+      <!-- FILAMENTOS -->
 
       <section class="secao">
+        <h2>🎨 Cores disponíveis</h2>
 
-        <div class="titulo-secao">
-
-          <h2>
-            🎨 Cores disponíveis
-          </h2>
-
-          <p class="subtexto">
-
-            Confira os materiais e as cores
-            disponíveis para personalizar
-            suas impressões 3D.
-
-          </p>
-
-        </div>
-
-        <!-- FILAMENTOS CARREGADOS DO SUPABASE -->
+        <p class="subtexto">
+          Confira os materiais e as cores disponíveis
+          para personalizar suas impressões 3D.
+        </p>
 
         <div
           id="listaFilamentos"
           class="lista-cores"
         ></div>
-
       </section>
 
-      <!-- =================================
-           CATÁLOGO DE PRODUTOS
-      ================================== -->
+      <!-- CATÁLOGO -->
 
       <section class="secao">
-
         <div class="barra-catalogo">
-
-          <div class="titulo-secao">
-
-            <h2>
-              🛍️ Nossos modelos 3D
-            </h2>
+          <div>
+            <h2>🛍️ Nossos modelos 3D</h2>
 
             <p class="subtexto">
-
-              Escolha seu modelo favorito,
-              personalize e faça seu pedido!
-
+              Clique nas fotos para ampliar e
+              escolha seu modelo favorito!
             </p>
-
           </div>
-
-          <!-- FILTRO DE CATEGORIAS -->
 
           <select
             id="filtroCategoria"
             aria-label="Filtrar modelos por categoria"
           >
-
-            <option value="Todos">
-              Todas as categorias
-            </option>
-
-            <option value="Decoração">
-              Decoração
-            </option>
-
-            <option value="Chaveiros">
-              Chaveiros
-            </option>
-
-            <option value="Articulados">
-              Articulados
-            </option>
-
-            <option value="Miniaturas">
-              Miniaturas
-            </option>
-
-            <option value="Utilitários">
-              Utilitários
-            </option>
-
-            <option value="Personalizados">
-              Personalizados
-            </option>
-
-            <option value="Outros">
-              Outros
-            </option>
-
+            <option value="Todos">Todas as categorias</option>
+            <option>Decoração</option>
+            <option>Chaveiros</option>
+            <option>Articulados</option>
+            <option>Miniaturas</option>
+            <option>Utilitários</option>
+            <option>Personalizados</option>
+            <option>Outros</option>
           </select>
-
         </div>
-
-        <!-- PRODUTOS CARREGADOS DO SUPABASE -->
 
         <div
           id="catalogo"
           class="grade-produtos"
         ></div>
-
       </section>
 
     </main>
 
-    <!-- ===================================
-         RODAPÉ
-    ==================================== -->
-
     <footer>
-
       <p>
-        3D STORE | Impressão 3D personalizada
+        PRFUSION 3D | Impressão 3D personalizada
       </p>
 
-      <p>
-        Produtos criados com tecnologia
-        de impressão 3D.
-      </p>
-
-      <p>
-        Faça seus pedidos pelo WhatsApp!
-      </p>
-
+      <p>Pedidos pelo WhatsApp</p>
     </footer>
 
   </div>
-
 </body>
-
 </html>
