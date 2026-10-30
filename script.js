@@ -1712,3 +1712,669 @@ if (document.readyState === "loading") {
 } else {
   iniciarLoja();
 }
+
+// ========================================
+// PRFUSION 3D - ZOOM CORRIGIDO
+// ========================================
+// Funciona sem modificar o script.js
+// principal da loja.
+
+(() => {
+  "use strict";
+
+  const ID = "prf-zoom-modal-v2";
+
+  function iniciarZoom() {
+    if (document.getElementById(ID)) return;
+
+    // ====================================
+    // ESTILO DO ZOOM
+    // ====================================
+
+    const estilo = document.createElement("style");
+
+    estilo.textContent = `
+      img.foto-produto {
+        cursor: zoom-in !important;
+      }
+
+      img.foto-produto:focus-visible {
+        outline: 3px solid #38bdf8;
+        outline-offset: -3px;
+      }
+
+      #${ID}[hidden] {
+        display: none !important;
+      }
+
+      #${ID} {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 2147483647 !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        padding: 12px !important;
+        background: rgba(0,0,0,.94) !important;
+        color: white !important;
+      }
+
+      #${ID} .zoom-caixa-nova {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: min(1050px, 100%);
+        max-height: 100%;
+      }
+
+      #${ID} .zoom-barra-nova {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      #${ID} .zoom-titulo-novo {
+        font: 600 15px Arial, sans-serif;
+        overflow-wrap: anywhere;
+      }
+
+      #${ID} .zoom-botoes-novos {
+        display: flex;
+        gap: 8px;
+      }
+
+      #${ID} button {
+        border: 1px solid #64748b;
+        border-radius: 8px;
+        background: #1e293b;
+        color: white;
+
+        padding: 9px 12px;
+        min-width: 43px;
+        min-height: 43px;
+
+        font: bold 15px Arial, sans-serif;
+        cursor: pointer;
+      }
+
+      #${ID} button:hover,
+      #${ID} button:focus-visible {
+        background: #0369a1;
+        outline: 2px solid #7dd3fc;
+      }
+
+      #${ID} .zoom-palco-novo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        overflow: hidden;
+        width: 100%;
+        height: min(76dvh, 750px);
+
+        background: #0b1120;
+        border: 1px solid #334155;
+        border-radius: 12px;
+
+        touch-action: none;
+        user-select: none;
+      }
+
+      #${ID} .zoom-palco-novo.ampliado {
+        cursor: grab;
+      }
+
+      #${ID} .zoom-imagem-nova {
+        display: block;
+
+        width: auto;
+        height: auto;
+        max-width: 100%;
+        max-height: 100%;
+
+        object-fit: contain;
+        pointer-events: none;
+        transform-origin: center center;
+        will-change: transform;
+      }
+
+      #${ID} .zoom-dica-nova {
+        margin: 0;
+        text-align: center;
+        color: #cbd5e1;
+        font: 12px/1.4 Arial, sans-serif;
+      }
+
+      @media (max-width: 600px) {
+        #${ID} .zoom-titulo-novo {
+          width: 100%;
+        }
+
+        #${ID} .zoom-palco-novo {
+          height: 66dvh;
+        }
+
+        #${ID} .zoom-botoes-novos {
+          width: 100%;
+          justify-content: space-between;
+        }
+      }
+    `;
+
+    document.head.appendChild(estilo);
+
+    // ====================================
+    // CRIAR JANELA DE ZOOM
+    // ====================================
+
+    const janela = document.createElement("div");
+
+    janela.id = ID;
+    janela.hidden = true;
+
+    janela.setAttribute("role", "dialog");
+    janela.setAttribute("aria-modal", "true");
+    janela.setAttribute(
+      "aria-label",
+      "Foto ampliada do produto"
+    );
+
+    janela.innerHTML = `
+      <div class="zoom-caixa-nova">
+
+        <div class="zoom-barra-nova">
+
+          <strong class="zoom-titulo-novo">
+            Foto do produto
+          </strong>
+
+          <div class="zoom-botoes-novos">
+
+            <button
+              type="button"
+              data-zoomnovo="menos"
+              aria-label="Diminuir zoom"
+            >−</button>
+
+            <button
+              type="button"
+              data-zoomnovo="percentual"
+              aria-label="Restaurar tamanho"
+            >100%</button>
+
+            <button
+              type="button"
+              data-zoomnovo="mais"
+              aria-label="Aumentar zoom"
+            >+</button>
+
+            <button
+              type="button"
+              data-zoomnovo="fechar"
+              aria-label="Fechar imagem"
+            >✕</button>
+
+          </div>
+        </div>
+
+        <div class="zoom-palco-novo">
+          <img
+            class="zoom-imagem-nova"
+            alt=""
+            draggable="false"
+          >
+        </div>
+
+        <p class="zoom-dica-nova">
+          Roda do mouse ou pinça para ampliar
+          • Arraste para mover
+          • Esc para fechar
+        </p>
+
+      </div>
+    `;
+
+    document.body.appendChild(janela);
+
+    const imagem = janela.querySelector(
+      ".zoom-imagem-nova"
+    );
+
+    const palco = janela.querySelector(
+      ".zoom-palco-novo"
+    );
+
+    const titulo = janela.querySelector(
+      ".zoom-titulo-novo"
+    );
+
+    const botoes = [
+      ...janela.querySelectorAll("button")
+    ];
+
+    function botao(nome) {
+      return janela.querySelector(
+        `[data-zoomnovo="${nome}"]`
+      );
+    }
+
+    let escala = 1;
+    let x = 0;
+    let y = 0;
+
+    let focoAnterior = null;
+    let overflowAnterior = "";
+
+    const ponteiros = new Map();
+
+    let distanciaInicial = 0;
+    let escalaInicial = 1;
+
+    // ====================================
+    // ATUALIZAR O ZOOM
+    // ====================================
+
+    function atualizar() {
+      const limiteX = Math.max(
+        0,
+        (imagem.clientWidth * escala -
+          palco.clientWidth) / 2
+      );
+
+      const limiteY = Math.max(
+        0,
+        (imagem.clientHeight * escala -
+          palco.clientHeight) / 2
+      );
+
+      x = Math.max(-limiteX, Math.min(limiteX, x));
+      y = Math.max(-limiteY, Math.min(limiteY, y));
+
+      imagem.style.transform =
+        `translate3d(${x}px, ${y}px, 0) scale(${escala})`;
+
+      botao("percentual").textContent =
+        `${Math.round(escala * 100)}%`;
+
+      palco.classList.toggle(
+        "ampliado",
+        escala > 1
+      );
+    }
+
+    function zoom(valor) {
+      escala = Math.min(
+        5,
+        Math.max(1, valor)
+      );
+
+      if (escala === 1) {
+        x = 0;
+        y = 0;
+      }
+
+      atualizar();
+    }
+
+    // ====================================
+    // ABRIR A FOTO
+    // ====================================
+
+    function abrir(foto) {
+      const src = foto.currentSrc || foto.src;
+
+      if (!src) return;
+
+      focoAnterior = document.activeElement;
+      overflowAnterior = document.body.style.overflow;
+
+      titulo.textContent =
+        foto.alt || "Foto do produto";
+
+      imagem.alt =
+        foto.alt || "Foto ampliada";
+
+      janela.hidden = false;
+
+      document.body.style.overflow = "hidden";
+
+      ponteiros.clear();
+
+      x = 0;
+      y = 0;
+
+      zoom(1);
+
+      imagem.onload = atualizar;
+      imagem.src = src;
+
+      botao("fechar").focus();
+    }
+
+    // ====================================
+    // FECHAR A FOTO
+    // ====================================
+
+    function fechar() {
+      if (janela.hidden) return;
+
+      janela.hidden = true;
+
+      document.body.style.overflow =
+        overflowAnterior;
+
+      ponteiros.clear();
+
+      imagem.removeAttribute("src");
+
+      if (focoAnterior?.isConnected) {
+        focoAnterior.focus();
+      }
+    }
+
+    // ====================================
+    // CLIQUE NAS FOTOS DOS PRODUTOS
+    // ====================================
+    // Captura o clique antes de qualquer
+    // código antigo de zoom.
+
+    document.addEventListener(
+      "click",
+      evento => {
+        const foto = evento.target?.closest?.(
+          "img.foto-produto"
+        );
+
+        if (!foto) return;
+
+        evento.preventDefault();
+        evento.stopImmediatePropagation();
+
+        abrir(foto);
+      },
+      true
+    );
+
+    // ====================================
+    // PREPARAR FOTOS NOVAS DO SUPABASE
+    // ====================================
+
+    function prepararFotos() {
+      document.querySelectorAll(
+        "img.foto-produto"
+      ).forEach(foto => {
+
+        if (!foto.hasAttribute("tabindex")) {
+          foto.tabIndex = 0;
+        }
+
+        if (!foto.hasAttribute("role")) {
+          foto.setAttribute("role", "button");
+        }
+
+        if (!foto.hasAttribute("aria-label")) {
+          foto.setAttribute(
+            "aria-label",
+            `Ampliar foto de ${foto.alt || "produto"}`
+          );
+        }
+
+        foto.title = "Clique para ampliar";
+      });
+    }
+
+    prepararFotos();
+
+    const catalogo = document.getElementById(
+      "catalogo"
+    );
+
+    if (catalogo) {
+      new MutationObserver(
+        prepararFotos
+      ).observe(catalogo, {
+        childList: true,
+        subtree: true
+      });
+    }
+
+    // ====================================
+    // ATALHOS DO TECLADO
+    // ====================================
+
+    document.addEventListener(
+      "keydown",
+      evento => {
+
+        const foto = evento.target?.matches?.(
+          "img.foto-produto"
+        ) ? evento.target : null;
+
+        if (
+          foto &&
+          (
+            evento.key === "Enter" ||
+            evento.key === " "
+          )
+        ) {
+          evento.preventDefault();
+          evento.stopImmediatePropagation();
+
+          abrir(foto);
+          return;
+        }
+
+        if (janela.hidden) return;
+
+        if (evento.key === "Escape") {
+          evento.preventDefault();
+          fechar();
+
+        } else if (
+          evento.key === "+" ||
+          evento.key === "="
+        ) {
+          zoom(escala * 1.25);
+
+        } else if (evento.key === "-") {
+          zoom(escala / 1.25);
+
+        } else if (evento.key === "0") {
+          zoom(1);
+
+        } else if (evento.key === "Tab") {
+          const primeiro = botoes[0];
+          const ultimo = botoes[botoes.length - 1];
+
+          if (
+            evento.shiftKey &&
+            document.activeElement === primeiro
+          ) {
+            evento.preventDefault();
+            ultimo.focus();
+
+          } else if (
+            !evento.shiftKey &&
+            document.activeElement === ultimo
+          ) {
+            evento.preventDefault();
+            primeiro.focus();
+          }
+        }
+      },
+      true
+    );
+
+    // ====================================
+    // BOTÕES DE ZOOM
+    // ====================================
+
+    botao("fechar").addEventListener(
+      "click",
+      fechar
+    );
+
+    botao("mais").addEventListener(
+      "click",
+      () => zoom(escala * 1.25)
+    );
+
+    botao("menos").addEventListener(
+      "click",
+      () => zoom(escala / 1.25)
+    );
+
+    botao("percentual").addEventListener(
+      "click",
+      () => zoom(1)
+    );
+
+    janela.addEventListener("click", evento => {
+      if (evento.target === janela) {
+        fechar();
+      }
+    });
+
+    // ====================================
+    // RODA DO MOUSE
+    // ====================================
+
+    palco.addEventListener(
+      "wheel",
+      evento => {
+        evento.preventDefault();
+
+        zoom(
+          escala *
+          (
+            evento.deltaY < 0
+              ? 1.12
+              : 1 / 1.12
+          )
+        );
+      },
+      { passive: false }
+    );
+
+    // DOIS CLIQUES
+
+    palco.addEventListener("dblclick", evento => {
+      evento.preventDefault();
+      zoom(escala > 1 ? 1 : 2);
+    });
+
+    // ====================================
+    // PINÇA E ARRASTAR NO CELULAR
+    // ====================================
+
+    function distancia(pontos) {
+      return Math.hypot(
+        pontos[0].x - pontos[1].x,
+        pontos[0].y - pontos[1].y
+      );
+    }
+
+    palco.addEventListener(
+      "pointerdown",
+      evento => {
+
+        if (
+          evento.pointerType === "mouse" &&
+          evento.button !== 0
+        ) {
+          return;
+        }
+
+        ponteiros.set(evento.pointerId, {
+          x: evento.clientX,
+          y: evento.clientY
+        });
+
+        try {
+          palco.setPointerCapture(
+            evento.pointerId
+          );
+        } catch {}
+
+        if (ponteiros.size === 2) {
+          distanciaInicial = distancia(
+            [...ponteiros.values()]
+          );
+
+          escalaInicial = escala;
+        }
+      }
+    );
+
+    palco.addEventListener(
+      "pointermove",
+      evento => {
+
+        const anterior = ponteiros.get(
+          evento.pointerId
+        );
+
+        if (!anterior) return;
+
+        ponteiros.set(evento.pointerId, {
+          x: evento.clientX,
+          y: evento.clientY
+        });
+
+        if (
+          ponteiros.size === 2 &&
+          distanciaInicial > 0
+        ) {
+          zoom(
+            escalaInicial *
+            distancia([...ponteiros.values()]) /
+            distanciaInicial
+          );
+
+        } else if (
+          ponteiros.size === 1 &&
+          escala > 1
+        ) {
+          x += evento.clientX - anterior.x;
+          y += evento.clientY - anterior.y;
+
+          atualizar();
+        }
+      }
+    );
+
+    function soltar(evento) {
+      ponteiros.delete(evento.pointerId);
+
+      if (ponteiros.size < 2) {
+        distanciaInicial = 0;
+      }
+    }
+
+    [
+      "pointerup",
+      "pointercancel",
+      "lostpointercapture"
+    ].forEach(nome => {
+      palco.addEventListener(nome, soltar);
+    });
+  }
+
+  // ====================================
+  // INICIAR O ZOOM
+  // ====================================
+
+  if (document.readyState === "loading") {
+    document.addEventListener(
+      "DOMContentLoaded",
+      iniciarZoom,
+      { once: true }
+    );
+  } else {
+    iniciarZoom();
+  }
+})();
