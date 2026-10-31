@@ -4,24 +4,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Loja 3D: modelos impressos em 3D sob encomenda.">
 
-  <meta
-    name="description"
-    content="Loja 3d: modelos impressos em 3D sob encomenda."
-  >
+  <title>Loja 3D</title>
 
-  <title>Loja 3d</title>
+  <link rel="stylesheet" href="style.css?v=13">
 
-  <link rel="stylesheet" href="style.css?v=11">
-
-  <!-- Supabase -->
-  <script
-    src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
-    defer>
-  </script>
-
-  <!-- JavaScript da loja -->
-  <script src="script.js?v=11" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="script.js?v=13" defer></script>
 </head>
 
 <body>
@@ -29,11 +19,17 @@
 
     <header>
       <div class="topo">
-        <div class="logo">Loja 3d</div>
+        <div class="logo">Loja 3D</div>
 
-        <button id="alternarTema" type="button">
-          ☀️ Modo claro
-        </button>
+        <div class="acoes-topo">
+          <button id="alternarTema" type="button">
+            ☀️ Modo claro
+          </button>
+
+          <button id="abrirAdmin" type="button">
+            ⚙️ Administração
+          </button>
+        </div>
       </div>
 
       <div class="apresentacao">
@@ -41,7 +37,7 @@
           IMPRESSÃO 3D PERSONALIZADA
         </span>
 
-        <h1>Loja 3d</h1>
+        <h1>Loja 3D</h1>
 
         <p>
           Transformando ideias em realidade!
@@ -54,178 +50,236 @@
 
     <main>
 
-      <!-- PAINEL ADMINISTRATIVO -->
+      <!-- ÁREA ADMINISTRATIVA -->
 
-      <section class="admin" hidden>
+      <section class="admin" id="areaAdmin" hidden>
         <h2>⚙️ Gerenciar catálogo</h2>
 
         <p class="subtexto">
-          Cadastre e exclua modelos e filamentos
-          disponíveis na loja.
+          Entre com sua conta de administrador para
+          cadastrar ou excluir itens.
         </p>
 
-        <!-- CADASTRAR MODELO -->
+        <!-- LOGIN -->
 
-        <details class="painel">
-          <summary>+ Adicionar modelo 3D</summary>
+        <div class="painel" id="painelLogin">
+          <form id="formLogin">
+            <h3>Entrar como administrador</h3>
 
-          <form id="formModelo">
-            <div class="campos">
+            <label for="emailAdmin">E-mail</label>
 
-              <div class="campo">
-                <label for="nomeModelo">
-                  Nome do modelo
-                </label>
+            <input
+              id="emailAdmin"
+              type="email"
+              autocomplete="username"
+              required
+            >
 
-                <input
-                  id="nomeModelo"
-                  type="text"
-                  placeholder="Ex.: Dragão articulado"
-                  maxlength="80"
-                  required
-                >
-              </div>
+            <label for="senhaAdmin">Senha</label>
 
-              <div class="campo">
-                <label for="categoriaModelo">
-                  Categoria
-                </label>
-
-                <select id="categoriaModelo" required>
-                  <option>Decoração</option>
-                  <option>Chaveiros</option>
-                  <option>Articulados</option>
-                  <option>Miniaturas</option>
-                  <option>Utilitários</option>
-                  <option>Personalizados</option>
-                  <option>Outros</option>
-                </select>
-              </div>
-
-              <div class="campo completo">
-                <label for="descricaoModelo">
-                  Descrição
-                </label>
-
-                <textarea
-                  id="descricaoModelo"
-                  rows="4"
-                  maxlength="1000"
-                  placeholder="Descreva o modelo..."
-                ></textarea>
-              </div>
-
-              <div class="campo">
-                <label for="precoModelo">
-                  Preço (R$)
-                </label>
-
-                <input
-                  id="precoModelo"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="35.00"
-                >
-              </div>
-
-              <div class="campo completo">
-                <label for="fotoModelo">
-                  Link da foto (opcional)
-                </label>
-
-                <input
-                  id="fotoModelo"
-                  type="text"
-                  placeholder="https://... ou imagens/dragao.png"
-                >
-
-                <label for="fotoArquivo">
-                  Ou escolha uma foto do computador (até 5 MB)
-                </label>
-
-                <input
-                  id="fotoArquivo"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                >
-              </div>
-
-            </div>
+            <input
+              id="senhaAdmin"
+              type="password"
+              autocomplete="current-password"
+              required
+            >
 
             <button class="btn-salvar" type="submit">
-              Salvar modelo 3D
+              Entrar
             </button>
           </form>
-        </details>
+        </div>
 
-        <!-- CADASTRAR FILAMENTO -->
+        <!-- PAINEL DO ADMINISTRADOR -->
 
-        <details class="painel">
-          <summary>+ Adicionar filamento disponível</summary>
+        <div id="adminDados" hidden>
+          <div class="linha-admin">
+            <strong>✅ Administrador conectado</strong>
 
-          <form id="formFilamento">
-            <div class="campos">
-
-              <div class="campo">
-                <label for="nomeCor">Nome da cor</label>
-
-                <input
-                  id="nomeCor"
-                  type="text"
-                  maxlength="50"
-                  placeholder="Ex.: Azul"
-                  required
-                >
-              </div>
-
-              <div class="campo">
-                <label for="tipoFilamento">
-                  Material
-                </label>
-
-                <select id="tipoFilamento" required>
-                  <option>PLA</option>
-                  <option>PETG</option>
-                  <option>ABS</option>
-                  <option>TPU</option>
-                  <option>ASA</option>
-                  <option>Outro</option>
-                </select>
-              </div>
-
-              <div class="campo">
-                <label for="marcaFilamento">
-                  Marca (opcional)
-                </label>
-
-                <input
-                  id="marcaFilamento"
-                  type="text"
-                  maxlength="60"
-                  placeholder="Ex.: Voolt3D"
-                >
-              </div>
-
-              <div class="campo">
-                <label for="corFilamento">
-                  Cor visual
-                </label>
-
-                <input
-                  id="corFilamento"
-                  type="color"
-                  value="#2563eb"
-                >
-              </div>
-
-            </div>
-
-            <button class="btn-salvar" type="submit">
-              Salvar filamento
+            <button id="sairAdmin" type="button">
+              Sair da conta
             </button>
-          </form>
-        </details>
+          </div>
+
+          <!-- CADASTRAR MODELO -->
+
+          <details class="painel">
+            <summary>+ Adicionar modelo 3D</summary>
+
+            <form id="formModelo">
+              <div class="campos">
+
+                <div class="campo">
+                  <label for="nomeModelo">
+                    Nome do modelo
+                  </label>
+
+                  <input
+                    id="nomeModelo"
+                    type="text"
+                    maxlength="80"
+                    placeholder="Ex.: Dragão articulado"
+                    required
+                  >
+                </div>
+
+                <div class="campo">
+                  <label for="categoriaModelo">
+                    Categoria
+                  </label>
+
+                  <select id="categoriaModelo" required>
+                    <option>Decoração</option>
+                    <option>Chaveiros</option>
+                    <option>Articulados</option>
+                    <option>Miniaturas</option>
+                    <option>Utilitários</option>
+                    <option>Personalizados</option>
+                    <option>Outros</option>
+                  </select>
+                </div>
+
+                <div class="campo completo">
+                  <label for="descricaoModelo">
+                    Descrição
+                  </label>
+
+                  <textarea
+                    id="descricaoModelo"
+                    rows="4"
+                    maxlength="1000"
+                    placeholder="Descreva o modelo..."
+                  ></textarea>
+                </div>
+
+                <div class="campo">
+                  <label for="precoModelo">
+                    Preço unitário (R$)
+                  </label>
+
+                  <input
+                    id="precoModelo"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="35.00"
+                  >
+                </div>
+
+                <div class="campo completo">
+                  <label for="fotoModelo">
+                    Link da foto (opcional)
+                  </label>
+
+                  <input
+                    id="fotoModelo"
+                    type="text"
+                    placeholder="https://... ou imagens/dragao.png"
+                  >
+
+                  <label for="fotoArquivo">
+                    Ou escolha uma foto do computador
+                    (até 5 MB)
+                  </label>
+
+                  <input
+                    id="fotoArquivo"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                  >
+                </div>
+
+              </div>
+
+              <button class="btn-salvar" type="submit">
+                Salvar modelo 3D
+              </button>
+            </form>
+          </details>
+
+          <!-- CADASTRAR FILAMENTO -->
+
+          <details class="painel">
+            <summary>
+              + Adicionar filamento disponível
+            </summary>
+
+            <form id="formFilamento">
+              <div class="campos">
+
+                <div class="campo">
+                  <label for="nomeCor">
+                    Nome da cor
+                  </label>
+
+                  <input
+                    id="nomeCor"
+                    type="text"
+                    maxlength="50"
+                    placeholder="Ex.: Azul"
+                    required
+                  >
+                </div>
+
+                <div class="campo">
+                  <label for="tipoFilamento">
+                    Material
+                  </label>
+
+                  <select id="tipoFilamento" required>
+                    <option>PLA</option>
+                    <option>PETG</option>
+                    <option>ABS</option>
+                    <option>TPU</option>
+                    <option>ASA</option>
+                    <option>Outro</option>
+                  </select>
+                </div>
+
+                <div class="campo">
+                  <label for="marcaFilamento">
+                    Marca (opcional)
+                  </label>
+
+                  <input
+                    id="marcaFilamento"
+                    type="text"
+                    maxlength="60"
+                    placeholder="Ex.: Voolt3D"
+                  >
+                </div>
+
+                <div class="campo">
+                  <label for="corFilamento">
+                    Cor visual
+                  </label>
+
+                  <input
+                    id="corFilamento"
+                    type="color"
+                    value="#2563eb"
+                  >
+                </div>
+
+              </div>
+
+              <button class="btn-salvar" type="submit">
+                Salvar filamento
+              </button>
+            </form>
+          </details>
+
+          <!-- GERENCIAR ITENS -->
+
+          <details class="painel">
+            <summary>
+              🗑️ Gerenciar e excluir itens
+            </summary>
+
+            <div id="listaGerenciar"></div>
+          </details>
+
+        </div>
       </section>
 
       <!-- FILAMENTOS -->
@@ -234,7 +288,7 @@
         <h2>🎨 Cores disponíveis</h2>
 
         <p class="subtexto">
-          Confira os materiais e as cores disponíveis
+          Confira os materiais e cores disponíveis
           para personalizar suas impressões 3D.
         </p>
 
@@ -247,13 +301,14 @@
       <!-- CATÁLOGO -->
 
       <section class="secao">
+
         <div class="barra-catalogo">
           <div>
             <h2>🛍️ Nossos modelos 3D</h2>
 
             <p class="subtexto">
-              Clique nas fotos para ampliar e
-              escolha seu modelo favorito!
+              Clique na foto para ampliar e altere
+              a quantidade para ver o valor total.
             </p>
           </div>
 
@@ -261,7 +316,10 @@
             id="filtroCategoria"
             aria-label="Filtrar modelos por categoria"
           >
-            <option value="Todos">Todas as categorias</option>
+            <option value="Todos">
+              Todas as categorias
+            </option>
+
             <option>Decoração</option>
             <option>Chaveiros</option>
             <option>Articulados</option>
@@ -290,8 +348,69 @@
 
   </div>
 
-  <!-- ZOOM DAS FOTOS DOS PRODUTOS -->
-  <script src="zoom.js?v=2" defer></script>
+  <!-- JANELA DO ZOOM -->
+
+  <div
+    id="zoomModal"
+    class="zoom-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Foto ampliada do produto"
+    hidden
+  >
+
+    <div class="zoom-caixa">
+
+      <div class="zoom-barra">
+        <strong id="zoomTitulo">
+          Foto do produto
+        </strong>
+
+        <div class="zoom-controles">
+
+          <button
+            id="zoomMenos"
+            type="button"
+            aria-label="Diminuir zoom"
+          >−</button>
+
+          <button
+            id="zoomReset"
+            type="button"
+            aria-label="Restaurar zoom"
+          >100%</button>
+
+          <button
+            id="zoomMais"
+            type="button"
+            aria-label="Aumentar zoom"
+          >+</button>
+
+          <button
+            id="zoomFechar"
+            type="button"
+            aria-label="Fechar imagem"
+          >✕</button>
+
+        </div>
+      </div>
+
+      <div id="zoomPalco" class="zoom-palco">
+        <img
+          id="zoomImagem"
+          alt=""
+          draggable="false"
+        >
+      </div>
+
+      <p class="zoom-dica">
+        Use +/− ou a roda do mouse para ampliar.
+        Arraste para mover; no celular, use dois dedos.
+        Esc fecha.
+      </p>
+
+    </div>
+  </div>
 
 </body>
 </html>

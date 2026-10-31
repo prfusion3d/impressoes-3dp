@@ -1,5 +1,5 @@
 
-/* PRFUSION 3D — VISUAL ORIGINAL COM ZOOM */
+/* LOJA 3D - VISUAL COMPLETO */
 
 * {
   box-sizing: border-box;
@@ -56,7 +56,7 @@ body {
   background: var(--fundo);
   color: var(--texto);
   font-family: Arial, Helvetica, sans-serif;
-  transition: background-color .3s, color .3s;
+  transition: background-color .25s, color .25s;
 }
 
 [hidden] {
@@ -72,12 +72,12 @@ body {
 
 button {
   cursor: pointer;
-  font-family: inherit;
+  font: inherit;
 }
 
 button:disabled {
-  opacity: .55;
-  cursor: wait;
+  opacity: .6;
+  cursor: not-allowed;
 }
 
 button:focus-visible,
@@ -86,7 +86,7 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 summary:focus-visible,
-.foto-produto:focus-visible {
+img.foto-produto:focus-visible {
   outline: 3px solid var(--azul);
   outline-offset: 3px;
 }
@@ -108,19 +108,27 @@ summary:focus-visible,
   letter-spacing: 2px;
 }
 
+.acoes-topo {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 #alternarTema,
-.botao-admin {
+#abrirAdmin,
+#sairAdmin {
   background: var(--cartao);
   color: var(--texto);
   border: 1px solid var(--borda);
   border-radius: 30px;
-  padding: 12px 20px;
+  padding: 11px 16px;
   font-weight: bold;
   font-size: 14px;
 }
 
 #alternarTema:hover,
-.botao-admin:hover {
+#abrirAdmin:hover,
+#sairAdmin:hover {
   border-color: var(--azul);
 }
 
@@ -166,7 +174,7 @@ h2 {
   margin: 0;
 }
 
-/* PAINEL ADMINISTRATIVO */
+/* ADMINISTRAÇÃO */
 
 .admin {
   background: var(--cartao);
@@ -191,6 +199,21 @@ h2 {
   cursor: pointer;
 }
 
+.painel h3 {
+  margin-top: 0;
+}
+
+.linha-admin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+/* FORMULÁRIOS */
+
 form {
   margin-top: 23px;
 }
@@ -212,9 +235,19 @@ form {
   grid-column: 1 / -1;
 }
 
-.campo label {
+.campo label,
+#formLogin label {
   color: var(--secundario);
   font-size: 13px;
+}
+
+#formLogin {
+  max-width: 420px;
+}
+
+#formLogin label {
+  display: block;
+  margin: 12px 0 6px;
 }
 
 input,
@@ -251,15 +284,15 @@ input[type="file"] {
 
 .btn-salvar {
   background: #0284c7;
-  color: white;
-  border: 0;
+  color: #fff;
+  border: none;
   border-radius: 9px;
   padding: 14px 24px;
   font-weight: bold;
   margin-top: 20px;
 }
 
-.btn-salvar:hover {
+.btn-salvar:hover:not(:disabled) {
   background: #0369a1;
 }
 
@@ -320,10 +353,14 @@ input[type="file"] {
 
 .grade-produtos {
   display: grid;
-  grid-template-columns:
-    repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(250px, 1fr)
+  );
   gap: 23px;
 }
+
+/* CARTÕES DOS PRODUTOS */
 
 .card {
   background: var(--cartao);
@@ -331,10 +368,7 @@ input[type="file"] {
   border-radius: 16px;
   overflow: hidden;
   box-shadow: var(--sombra);
-
-  transition:
-    transform .25s,
-    border-color .25s;
+  transition: transform .25s, border-color .25s;
 }
 
 .card:hover {
@@ -393,7 +427,7 @@ img.foto-produto {
 
 .preco {
   color: var(--texto);
-  font-size: 24px;
+  font-size: 19px;
   font-weight: 800;
   margin: 20px 0;
 }
@@ -419,13 +453,32 @@ img.foto-produto {
   margin-top: 8px;
 }
 
+/* TOTAL AUTOMÁTICO DO PEDIDO */
+
+.total-pedido {
+  margin-top: 16px;
+  padding: 14px 12px;
+  border: 1px solid #16a34a;
+  border-radius: 10px;
+  background: rgba(22, 163, 74, .10);
+  color: #4ade80;
+  font-size: 19px;
+  font-weight: 800;
+  text-align: center;
+}
+
+html[data-tema="claro"] .total-pedido {
+  color: #15803d;
+  background: #f0fdf4;
+}
+
 /* WHATSAPP */
 
 .botao-whatsapp {
   display: block;
   width: 100%;
   background: #16a34a;
-  color: white;
+  color: #fff;
   border: none;
   border-radius: 9px;
   text-decoration: none;
@@ -440,7 +493,7 @@ img.foto-produto {
   background: #15803d;
 }
 
-/* EXCLUIR PRODUTO */
+/* BOTÃO EXCLUIR */
 
 .btn-remover {
   display: block;
@@ -457,6 +510,8 @@ img.foto-produto {
   text-decoration: underline;
 }
 
+/* MENSAGENS E GERENCIAMENTO */
+
 .mensagem-vazia {
   width: 100%;
   grid-column: 1 / -1;
@@ -465,6 +520,29 @@ img.foto-produto {
   border: 1px dashed var(--borda);
   border-radius: 12px;
   text-align: center;
+}
+
+.linha-gerenciar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  margin: 8px 0;
+  border: 1px solid var(--borda);
+  border-radius: 9px;
+}
+
+.linha-gerenciar span {
+  overflow-wrap: anywhere;
+}
+
+.linha-gerenciar button {
+  background: #b91c1c;
+  color: white;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px;
 }
 
 footer {
@@ -477,9 +555,7 @@ footer {
   line-height: 1.7;
 }
 
-/* =====================================
-   JANELA PARA AMPLIAR IMAGENS
-===================================== */
+/* ZOOM EM TELA CHEIA */
 
 body.zoom-ativo {
   overflow: hidden;
@@ -490,7 +566,6 @@ body.zoom-ativo {
   inset: 0;
   z-index: 10000;
   padding: 14px;
-
   background: rgba(0, 0, 0, .92);
   color: white;
 
@@ -516,11 +591,6 @@ body.zoom-ativo {
   gap: 10px;
 }
 
-.zoom-titulo {
-  overflow-wrap: anywhere;
-  font-size: 15px;
-}
-
 .zoom-controles {
   display: flex;
   gap: 8px;
@@ -530,16 +600,13 @@ body.zoom-ativo {
 .zoom-controles button {
   min-height: 42px;
   min-width: 44px;
-
+  padding: 8px 12px;
   border: 1px solid #64748b;
   border-radius: 8px;
-
   background: #1e293b;
   color: white;
-
-  padding: 8px 12px;
-  font-weight: bold;
   font-size: 16px;
+  font-weight: bold;
 }
 
 .zoom-controles button:hover {
@@ -566,7 +633,7 @@ body.zoom-ativo {
   cursor: grab;
 }
 
-.zoom-imagem {
+#zoomImagem {
   display: block;
   max-width: 100%;
   max-height: 100%;
@@ -586,9 +653,10 @@ body.zoom-ativo {
   margin: 0;
 }
 
-/* CELULARES */
+/* VERSÃO CELULAR */
 
 @media (max-width: 650px) {
+
   .container {
     padding: 15px;
   }
@@ -597,9 +665,14 @@ body.zoom-ativo {
     font-size: 18px;
   }
 
-  #alternarTema {
+  .acoes-topo {
+    width: 100%;
+  }
+
+  .acoes-topo button {
+    flex: 1;
     font-size: 12px;
-    padding: 10px 12px;
+    padding: 10px;
   }
 
   .apresentacao {
@@ -631,8 +704,10 @@ body.zoom-ativo {
   }
 
   .grade-produtos {
-    grid-template-columns:
-      repeat(auto-fill, minmax(min(230px, 100%), 1fr));
+    grid-template-columns: repeat(
+      auto-fill,
+      minmax(min(230px, 100%), 1fr)
+    );
     gap: 15px;
   }
 
@@ -640,12 +715,12 @@ body.zoom-ativo {
     height: 210px;
   }
 
-  .zoom-titulo {
-    width: 100%;
+  .total-pedido {
+    font-size: 17px;
   }
 
   .zoom-palco {
-    height: 69dvh;
+    height: 65dvh;
   }
 
   .zoom-controles {
@@ -653,16 +728,22 @@ body.zoom-ativo {
     justify-content: space-between;
   }
 
+  .zoom-barra strong {
+    width: 100%;
+  }
+
   .zoom-dica {
-    line-height: 1.4;
+    line-height: 1.5;
   }
 }
+
+/* ACESSIBILIDADE */
 
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
+    scroll-behavior: auto !important;
     transition-duration: .01ms !important;
-    animation-duration: .01ms !important;
   }
 }
