@@ -116,6 +116,7 @@ img.foto-produto:focus-visible {
 
 #alternarTema,
 #abrirAdmin,
+#abrirCarrinho,
 #sairAdmin {
   background: var(--cartao);
   color: var(--texto);
@@ -128,6 +129,7 @@ img.foto-produto:focus-visible {
 
 #alternarTema:hover,
 #abrirAdmin:hover,
+#abrirCarrinho:hover,
 #sairAdmin:hover {
   border-color: var(--azul);
 }
@@ -508,6 +510,71 @@ html[data-tema="claro"] .total-pedido {
 
 .btn-remover:hover {
   text-decoration: underline;
+}
+
+.botao-adicionar-carrinho {
+  width: 100%;
+  margin-top: 10px;
+  padding: 13px;
+  border: 1px solid var(--azul);
+  border-radius: 9px;
+  background: var(--tag-fundo);
+  color: var(--texto);
+  font-weight: bold;
+}
+
+.carrinho-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  padding: 18px;
+  background: #0009;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.carrinho-caixa {
+  width: min(680px, 100%);
+  max-height: min(85vh, 800px);
+  overflow: auto;
+  padding: 22px;
+  border: 1px solid var(--borda);
+  border-radius: 16px;
+  background: var(--cartao);
+  color: var(--texto);
+  box-shadow: var(--sombra);
+}
+
+.carrinho-cabecalho,
+.item-carrinho,
+.controles-carrinho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.carrinho-cabecalho { margin-bottom: 18px; }
+.carrinho-cabecalho h2 { margin: 0; }
+.carrinho-cabecalho button,
+.remover-carrinho {
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: var(--painel);
+  color: var(--texto);
+}
+.item-carrinho { padding: 14px 0; border-bottom: 1px solid var(--borda); }
+.detalhes-carrinho { display: grid; gap: 6px; }
+.detalhes-carrinho small { color: var(--secundario); }
+.controles-carrinho input { width: 88px; }
+.remover-carrinho { color: #ef4444; }
+.carrinho-resumo { padding-top: 18px; text-align: right; font-size: 19px; }
+
+@media (max-width: 520px) {
+  .item-carrinho { align-items: flex-start; flex-direction: column; }
+  .controles-carrinho { width: 100%; justify-content: flex-start; }
 }
 
 /* MENSAGENS E GERENCIAMENTO */

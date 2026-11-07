@@ -22,6 +22,9 @@
         <div class="logo">Loja 3D</div>
 
         <div class="acoes-topo">
+          <button id="abrirCarrinho" type="button" aria-haspopup="dialog">
+            🛒 Carrinho <span id="contagemCarrinho">0</span>
+          </button>
           <button id="alternarTema" type="button">
             ☀️ Modo claro
           </button>
@@ -349,6 +352,18 @@
   </div>
 
   <!-- JANELA DO ZOOM -->
+
+  <div id="carrinhoModal" class="carrinho-overlay" role="dialog" aria-modal="true" aria-labelledby="tituloCarrinho" hidden>
+    <section class="carrinho-caixa">
+      <div class="carrinho-cabecalho">
+        <h2 id="tituloCarrinho">🛒 Meu carrinho</h2>
+        <button id="fecharCarrinho" type="button" aria-label="Fechar carrinho">✕</button>
+      </div>
+      <div id="itensCarrinho"></div>
+      <div class="carrinho-resumo"><strong>Total: <span id="totalCarrinho">R$ 0,00</span></strong></div>
+      <a id="finalizarCarrinho" class="botao-whatsapp" target="_blank" rel="noopener noreferrer">Finalizar pedido pelo WhatsApp</a>
+    </section>
+  </div>
 
   <div
     id="zoomModal"

@@ -497,6 +497,88 @@ function iniciarLoja() {
 
   let modelos = [];
   let filamentos = [];
+  let modelosCarregados = false;
+  const CHAVE_CARRINHO = "loja3d_carrinho_v1";
+  const MAX_QTD_CARRINHO = 999;
+  let carrinho = carregarCarrinho();
+
+  function carregarCarrinho() {
+    try {
+      const salvo = JSON.parse(localStorage.getItem(CHAVE_CARRINHO) || "[]");
+      if (!Array.isArray(salvo)) return [];
+      return salvo.filter(i => i && (typeof i.id === "string" || typeof i.id === "number") &&
+        Number.isInteger(i.quantidade) && i.quantidade > 0 && i.quantidade <= MAX_QTD_CARRINHO)
+        .map(i => ({ id: String(i.id), quantidade: i.quantidade,
+          filamentoId: i.filamentoId == null ? "" : String(i.filamentoId) }))
+        .slice(0, 100);
+    } catch { return []; }
+  }
+
+  function salvarCarrinho() {
+    try { localStorage.setItem(CHAVE_CARRINHO, JSON.stringify(carrinho)); }
+    catch { informar("Não foi possível salvar o carrinho neste navegador.", true); }
+  }
+
+  function adicionarAoCarrinho(modelo, qtd, filamentoId) {
+    const id = String(modelo.id);
+    const existente = carrinho.find(i => i.id === id && i.filamentoId === String(filamentoId || ""));
+    if (existente) existente.quantidade = Math.min(MAX_QTD_CARRINHO, existente.quantidade + qtd);
+    else carrinho.push({ id, quantidade: Math.min(MAX_QTD_CARRINHO, qtd), filamentoId: String(filamentoId || "") });
+    salvarCarrinho();
+    mostrarCarrinho();
+    informar(`${modelo.nome} adicionado ao carrinho.`);
+  }
+
+  function mostrarCarrinho() {
+    const lista = $("itensCarrinho");
+    if (!lista) return;
+    // Remove itens corrompidos ou produtos excluídos do catálogo.
+    if (modelosCarregados) {
+      carrinho = carrinho.filter(i => modelos.some(m => String(m.id) === i.id));
+      salvarCarrinho();
+    }
+    lista.replaceChildren();
+    const contagem = carrinho.reduce((s, i) => s + i.quantidade, 0);
+    $("contagemCarrinho").textContent = contagem;
+    let totalGeral = 0;
+    if (!carrinho.length) lista.append(criar("p", "mensagem-vazia", "Seu carrinho está vazio."));
+    carrinho.forEach(item => {
+      const m = modelos.find(x => String(x.id) === item.id);
+      const preco = Number(m.preco);
+      const temPreco = m.preco !== null && m.preco !== undefined && m.preco !== "" && Number.isFinite(preco) && preco >= 0;
+      const subtotal = temPreco ? preco * item.quantidade : null;
+      if (subtotal !== null) totalGeral += subtotal;
+      const linha = criar("article", "item-carrinho");
+      const detalhes = criar("div", "detalhes-carrinho");
+      detalhes.append(criar("strong", "", m.nome));
+      const filamento = filamentos.find(f => String(f.id) === item.filamentoId);
+      detalhes.append(criar("small", "", `Cor/material: ${filamento ? `${filamento.tipo} - ${filamento.cor}` : "A combinar"}`));
+      detalhes.append(criar("small", "", temPreco ? `Unitário: ${moeda(preco)} · Subtotal: ${moeda(subtotal)}` : "Preço a consultar"));
+      const controles = criar("div", "controles-carrinho");
+      const qtd = criar("input"); qtd.type = "number"; qtd.min = "1"; qtd.max = String(MAX_QTD_CARRINHO); qtd.value = item.quantidade; qtd.setAttribute("aria-label", `Quantidade de ${m.nome}`);
+      qtd.addEventListener("change", () => { item.quantidade = Math.max(1, Math.min(MAX_QTD_CARRINHO, Math.floor(Number(qtd.value) || 1))); mostrarCarrinho(); });
+      const remover = criar("button", "remover-carrinho", "Remover"); remover.type = "button"; remover.onclick = () => { carrinho = carrinho.filter(x => x !== item); mostrarCarrinho(); };
+      controles.append(qtd, remover); linha.append(detalhes, controles); lista.append(linha);
+    });
+    salvarCarrinho();
+    $("totalCarrinho").textContent = moeda(totalGeral);
+    const finalizar = $("finalizarCarrinho");
+    finalizar.hidden = !carrinho.length;
+    const linhas = carrinho.map(item => {
+      const m = modelos.find(x => String(x.id) === item.id);
+      const preco = Number(m.preco);
+      const temPreco = m.preco !== null && m.preco !== undefined && m.preco !== "" && Number.isFinite(preco) && preco >= 0;
+      const f = filamentos.find(x => String(x.id) === item.filamentoId);
+      return `• ${m.nome} — ${item.quantidade} un. — ${temPreco ? `${moeda(preco)} cada; subtotal ${moeda(preco * item.quantidade)}` : "preço a consultar"} — ${f ? `${f.tipo} - ${f.cor}` : "cor/material a combinar"}`;
+    });
+    const mensagem = `Olá! Gostaria de fazer este pedido:\n\n${linhas.join("\n")}\n\nTotal dos itens com preço informado: ${moeda(totalGeral)}\n\nGostaria de confirmar disponibilidade e valor final!`;
+    finalizar.href = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(mensagem)}`;
+  }
+
+  $("abrirCarrinho").addEventListener("click", () => { $("carrinhoModal").hidden = false; mostrarCarrinho(); });
+  $("fecharCarrinho").addEventListener("click", () => { $("carrinhoModal").hidden = true; });
+  $("carrinhoModal").addEventListener("click", e => { if (e.target === $("carrinhoModal")) $("carrinhoModal").hidden = true; });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") $("carrinhoModal").hidden = true; });
 
   let administrador = false;
 
@@ -512,6 +594,7 @@ function iniciarLoja() {
     mostrarModelos();
     mostrarFilamentos();
     mostrarGerenciamento();
+    mostrarCarrinho();
   }
 
   $("abrirAdmin").addEventListener("click", () => {
@@ -778,6 +861,7 @@ function iniciarLoja() {
     } else {
 
       modelos = rm.data || [];
+      modelosCarregados = true;
     }
 
     if (rf.error) {
@@ -796,6 +880,7 @@ function iniciarLoja() {
     mostrarModelos();
     mostrarFilamentos();
     mostrarGerenciamento();
+    mostrarCarrinho();
   }
 
   // ======================================
@@ -1200,6 +1285,11 @@ function iniciarLoja() {
       atualizarPedido();
 
       info.append(pedir);
+
+      const adicionar = criar("button", "botao-adicionar-carrinho", "Adicionar ao carrinho");
+      adicionar.type = "button";
+      adicionar.addEventListener("click", () => adicionarAoCarrinho(m, quantidadeValida(), selectCor.value));
+      info.append(adicionar);
 
       // EXCLUIR MODELO
 
